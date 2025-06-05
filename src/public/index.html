@@ -1,0 +1,76 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>WhatsApp Web Interface</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            text-align: center;
+            margin-top: 50px;
+        }
+        #qr {
+            margin: 20px auto;
+            padding: 10px;
+            border: 1px solid #ccc;
+            display: inline-block;
+        }
+        #logout {
+            margin-top: 20px;
+            padding: 10px 20px;
+            background-color: #f44336;
+            color: white;
+            border: none;
+            cursor: pointer;
+        }
+        #logout:hover {
+            background-color: #d32f2f;
+        }
+    </style>
+    <script src="https://cdn.jsdelivr.net/npm/qrcode/build/qrcode.min.js"></script>
+</head>
+<body>
+    <h1>WhatsApp Web Interface</h1>
+    <div id="status"></div>
+    <canvas id="qr"></canvas>
+    <button id="logout" style="display: none;">Cerrar sesión</button>
+
+    <script>
+        async function fetchStatus() {
+            const response = await fetch('/api/status');
+            const data = await response.json();
+            const statusDiv = document.getElementById('status');
+            const qrCanvas = document.getElementById('qr');
+            const logoutButton = document.getElementById('logout');
+
+            if (data.connectionState === 'disconnected') {
+                statusDiv.textContent = 'Estado: Desconectado';
+                qrCanvas.getContext('2d').clearRect(0, 0, qrCanvas.width, qrCanvas.height);
+                if (data.qrCode) {
+                    QRCode.toCanvas(qrCanvas, data.qrCode, function (error) {
+                        if (error) console.error(error);
+                    });
+                } else {
+                    qrCanvas.textContent = 'Esperando QR...';
+                }
+                logoutButton.style.display = 'none';
+            } else if (data.connectionState === 'connected') {
+                statusDiv.textContent = 'Estado: Conectado';
+                qrCanvas.getContext('2d').clearRect(0, 0, qrCanvas.width, qrCanvas.height);
+                logoutButton.style.display = 'block';
+            }
+        }
+
+        async function logout() {
+            await fetch('/api/logout', { method: 'POST' });
+            fetchStatus();
+        }
+
+        document.getElementById('logout').addEventListener('click', logout);
+
+        setInterval(fetchStatus, 3000);
+        fetchStatus();
+    </script>
+</body>
+</html>
