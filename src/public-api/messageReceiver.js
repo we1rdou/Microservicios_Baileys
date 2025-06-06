@@ -1,19 +1,21 @@
-import verifyToken from '../auth/verifyToken.js';
+import express from 'express';
+import verifyTokenMiddleware from '../auth/verifyToken.js';
 import mainController from '../controllers/mainController.js';
 
-export default function (app, io) {
-  app.post('/enviar', async (req, res) => {
-    const { numero, mensaje, token } = req.body;
+const router = express.Router();
 
-    if (!verifyToken(token)) {
-      return res.status(403).json({ error: 'Token inválido' });
-    }
+router.post('/enviar', verifyTokenMiddleware, async (req, res) => {
+    const { numero, mensaje } = req.body;
 
     try {
-      await mainController.enviarMensaje(numero, mensaje, io);
-      res.json({ estado: 'Mensaje enviado' });
+        await mainController.enviarMensaje(numero, mensaje, req.app.get('io'));
+        res.json({ estado: 'Mensaje enviado' });
     } catch (error) {
-      res.status(500).json({ error: 'Error al enviar mensaje' });
+        res.status(500).json({ error: 'Error al enviar mensaje' });
     }
-  });
-}
+});
+
+export default (app, io) => {
+    app.set('io', io); // Para acceder a io desde el controlador si es necesario
+    app.use('/api', router);
+};

@@ -8,6 +8,8 @@ import webInterface from './public-api/webInterface.js';
 import path from 'path';
 import { fileURLToPath } from 'url';
 import { dirname } from 'path';
+import session from './auth/session.js';
+import cookieParser from 'cookie-parser';
 
 dotenv.config();
 
@@ -18,9 +20,12 @@ const io = new Server(httpServer);
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = dirname(__filename);
 
+app.use(cookieParser());
 app.use(express.json());
+app.use('/api', session);
 app.use('/api', webInterface);
 app.use(express.static(path.join(__dirname, 'public')));
+
 
 messageReceiver(app, io); // <- aquí es donde se registran las rutas
 

@@ -31,46 +31,97 @@
     <script src="https://cdn.jsdelivr.net/npm/qrcode/build/qrcode.min.js"></script>
 </head>
 <body>
+    <input type="text" id="phone" placeholder="Número WhatsApp">
+    <button id="startSession">Iniciar sesión</button>
+
     <h1>WhatsApp Web Interface</h1>
     <div id="status"></div>
     <canvas id="qr"></canvas>
     <button id="logout" style="display: none;">Cerrar sesión</button>
 
-    <script>
-        async function fetchStatus() {
-            const response = await fetch('/api/status');
-            const data = await response.json();
-            const statusDiv = document.getElementById('status');
-            const qrCanvas = document.getElementById('qr');
-            const logoutButton = document.getElementById('logout');
+<script>
+    let autenticado = false;
 
-            if (data.connectionState === 'disconnected') {
-                statusDiv.textContent = 'Estado: Desconectado';
-                qrCanvas.getContext('2d').clearRect(0, 0, qrCanvas.width, qrCanvas.height);
-                if (data.qrCode) {
-                    QRCode.toCanvas(qrCanvas, data.qrCode, function (error) {
-                        if (error) console.error(error);
-                    });
-                } else {
-                    qrCanvas.textContent = 'Esperando QR...';
-                }
-                logoutButton.style.display = 'none';
-            } else if (data.connectionState === 'connected') {
-                statusDiv.textContent = 'Estado: Conectado';
-                qrCanvas.getContext('2d').clearRect(0, 0, qrCanvas.width, qrCanvas.height);
-                logoutButton.style.display = 'block';
-            }
-        }
+    document.getElementById('startSession').addEventListener('click', async () => {
+        if (autenticado) return; // Si ya está autenticado, no hacer nada
 
-        async function logout() {
-            await fetch('/api/logout', { method: 'POST' });
+        const phone = document.getElementById('phone').value;
+        const response = await fetch('/api/session', {
+            method: 'POST',
+            credentials: 'include',
+            headers: {
+                'Content-Type': 'application/json'
+            },
+            body: JSON.stringify({ phone })
+        });
+
+        if (response.ok) {
+            alert('Autenticado');
             fetchStatus();
+        } else {
+            alert('No autorizado');
+        }
+    });
+
+    async function fetchStatus() {
+        const response = await fetch('/api/status', {
+            method: 'GET',
+            credentials: 'include',
+        });
+
+        const statusDiv = document.getElementById('status');
+        const qrCanvas = document.getElementById('qr');
+        const logoutButton = document.getElementById('logout');
+
+        if (response.status === 401) {
+            statusDiv.textContent = 'No autenticado';
+            autenticado = false;
+            logoutButton.style.display = 'none';
+            qrCanvas.getContext('2d').clearRect(0, 0, qrCanvas.width, qrCanvas.height);
+            return;
         }
 
-        document.getElementById('logout').addEventListener('click', logout);
+        const data = await response.json();
 
-        setInterval(fetchStatus, 3000);
+        if (data.connectionState === 'disconnected') {
+            autenticado = true;
+            statusDiv.textContent = 'Estado: Desconectado';
+            qrCanvas.getContext('2d').clearRect(0, 0, qrCanvas.width, qrCanvas.height);
+
+            if (data.qrCode) {
+                QRCode.toCanvas(qrCanvas, data.qrCode, function (error) {
+                    if (error) console.error(error);
+                });
+            } else {
+                qrCanvas.textContent = 'Esperando QR...';
+            }
+
+            logoutButton.style.display = 'none';
+
+        } else if (data.connectionState === 'connected') {
+            autenticado = true;
+            statusDiv.textContent = 'Estado: Conectado';
+            qrCanvas.getContext('2d').clearRect(0, 0, qrCanvas.width, qrCanvas.height);
+            logoutButton.style.display = 'block';
+        }
+    }
+
+    async function logout() {
+        await fetch('/api/logout', {
+            method: 'POST',
+            credentials: 'include',
+        });
+        autenticado = false;
         fetchStatus();
-    </script>
+    }
+
+    document.getElementById('logout').addEventListener('click', logout);
+
+    // Verificar estado cada 3s
+    setInterval(fetchStatus, 3000);
+    fetchStatus();
+</script>
+
+
 </body>
 </html>

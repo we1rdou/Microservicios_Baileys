@@ -2,6 +2,7 @@ import express from 'express';
 import fs from 'fs';
 import path from 'path';
 import { connectToWhatsApp, disconnectFromWhatsApp } from '../services/whatsappService.js';
+import verifyTokenMiddleware from '../auth/verifyToken.js';
 
 const router = express.Router();
 
@@ -13,11 +14,11 @@ export const updateConnectionState = (state, qr) => {
     qrCode = qr;
 };
 
-router.get('/status', (req, res) => {
+router.get('/status', verifyTokenMiddleware, (req, res) => {
     res.json({ connectionState, qrCode });
 });
 
-router.post('/logout', async (req, res) => {
+router.post('/logout', verifyTokenMiddleware, async (req, res) => {
     try {
         await disconnectFromWhatsApp();
         connectionState = 'disconnected';
@@ -27,9 +28,16 @@ router.post('/logout', async (req, res) => {
         const sessionPath = path.resolve('./auth_info_multi');
         fs.rmSync(sessionPath, { recursive: true, force: true });
 
+        res.clearCookie('jwt_token', {
+            httpOnly: true,
+            secure: false,       // solo en HTTPS
+            sameSite: 'Strict',
+        });
+
         // Generar un nuevo QR
         const newQrCode = await connectToWhatsApp({ generateQrOnly: true });
         qrCode = newQrCode;
+        
         res.json({ message: 'Sesión cerrada y QR regenerado', qrCode });
     } catch (error) {
         console.error('Error al cerrar sesión:', error);

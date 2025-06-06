@@ -3,7 +3,7 @@ import { Boom } from '@hapi/boom';
 import path from 'path';
 import qrcode from 'qrcode-terminal';
 import fs, { stat } from 'fs';
-import { generateJWT, saveJWT } from './tokenService.js';   
+import { generateJWT } from './tokenService.js';   
 import { updateConnectionState } from '../public-api/webInterface.js';
 import { create } from 'domain';
 
@@ -33,15 +33,13 @@ export const connectToWhatsApp = async (options = {}) => {
             updateConnectionState('connected', '');
 
             //Verifica si la carpeta tiene informacion para generar el token
-            const sessionPath = path.resolve('./auth_info_multi');
-            if (fs.existsSync(sessionPath) && fs.readdirSync(sessionPath).length > 0) {
-                const payload = { user: 'usuario_wa', createdAt: new Date().toISOString() };
-                const token = generateJWT(payload, '1d'); // Genera un token válido por 1 día
-                const sessionId = state.creds.me?.id || null;
-                saveJWT(token, sessionId); // Guarda el token en un archivo
-                console.log('JWT generado y guardado:', token);
-            }
+            const sessionId = state.creds.me?.id || null;
+            if (sessionId) {
+                const payload = { sessionId };
+                const token = generateJWT(payload);
+                console.log('Token generado para sesión:', token);
         }
+    }
     });
 
     sock.ev.on('creds.update', saveCreds);
