@@ -83,3 +83,5 @@ export const disconnectFromWhatsApp = () => {
         isLogoutIntentional = false;
     }
 };
+
+export const getSock = () => sock;
