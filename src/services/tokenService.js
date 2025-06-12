@@ -20,6 +20,7 @@ export function verifyJWT(token) {
     try {
         return jwt.verify(token, JWT_SECRET);
     } catch (err) {
+        console.error('Error al verificar el token:', err.message);
         return null;
     }
 }

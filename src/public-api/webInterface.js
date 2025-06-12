@@ -1,46 +1,56 @@
 import express from 'express';
-import fs from 'fs';
-import path from 'path';
-import { connectToWhatsApp, disconnectFromWhatsApp } from '../services/whatsappService.js';
-import verifyTokenMiddleware from '../auth/verifyToken.js';
+import { connectToWhatsApp, disconnectFromWhatsApp, getSock } from '../services/whatsappService.js';
 
 const router = express.Router();
 
-let connectionState = 'disconnected';
-let qrCode = '';
+let connectionState = {};
+let qrCode = {};
 
-export const updateConnectionState = (state, qr) => {
-    connectionState = state;
-    qrCode = qr;
+export const updateConnectionState = (sessionId, state, qr) => {
+    connectionState[sessionId] = state;
+    qrCode[sessionId] = qr;
 };
 
-router.get('/status', verifyTokenMiddleware, (req, res) => {
-    res.json({ connectionState, qrCode });
+// Verificar si hay una sesión activa
+router.get('/status/:phone', async (req, res) => {
+    const { phone } = req.params;
+
+    if (!connectionState[phone]) {
+        return res.status(404).json({ message: `No hay sesión activa para el número ${phone}` });
+    }
+
+    res.json({ connectionState: connectionState[phone], qrCode: qrCode[phone] });
 });
 
-router.post('/logout', verifyTokenMiddleware, async (req, res) => {
+// Iniciar sesión y generar QR
+router.post('/session/:phone', async (req, res) => {
+    const { phone } = req.params;
+
     try {
-        await disconnectFromWhatsApp();
-        connectionState = 'disconnected';
-        qrCode = '';
-
-        // Eliminar la carpeta de la sesión activa
-        const sessionPath = path.resolve('./auth_info_multi');
-        fs.rmSync(sessionPath, { recursive: true, force: true });
-
-        res.clearCookie('jwt_token', {
-            httpOnly: true,
-            secure: false,       // solo en HTTPS
-            sameSite: 'Strict',
-        });
-
-        // Generar un nuevo QR
-        const newQrCode = await connectToWhatsApp({ generateQrOnly: true });
-        qrCode = newQrCode;
-        
-        res.json({ message: 'Sesión cerrada y QR regenerado', qrCode });
+        const qrCode = await connectToWhatsApp(phone, { generateQrOnly: true });
+        res.status(200).json({ qrCode });
     } catch (error) {
-        console.error('Error al cerrar sesión:', error);
+        console.error(`Error al iniciar sesión para ${phone}:`, error.message);
+        res.status(401).json({ message: 'Número no autorizado o error al iniciar sesión' });
+    }
+});
+
+// Cerrar sesión
+router.post('/logout/:phone', async (req, res) => {
+    const { phone } = req.params;
+
+    try {
+        if (!connectionState[phone]) {
+            return res.status(404).json({ message: `No hay sesión activa para el número ${phone}` });
+        }
+
+        await disconnectFromWhatsApp(phone);
+        delete connectionState[phone];
+        delete qrCode[phone];
+
+        res.json({ message: `Sesión cerrada para el número ${phone}` });
+    } catch (error) {
+        console.error(`Error al cerrar sesión para ${phone}:`, error.message);
         res.status(500).json({ message: 'Error al cerrar sesión' });
     }
 });
