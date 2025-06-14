@@ -42,124 +42,86 @@
 <script>
     let autenticado = false;
 
-    async function checkSession(phone) {
-        try {
-            const response = await fetch(`/api/status/${phone}`, {
-                method: 'GET',
-                headers: {
-                    'Content-Type': 'application/json'
-                }
-            });
+    document.getElementById('startSession').addEventListener('click', async () => {
+        if (autenticado) return; // Si ya está autenticado, no hacer nada
 
-            const statusDiv = document.getElementById('status');
-            const qrCanvas = document.getElementById('qr');
-            const logoutButton = document.getElementById('logout');
+        const phone = document.getElementById('phone').value;
+        const response = await fetch('/api/session', {
+            method: 'POST',
+            credentials: 'include',
+            headers: {
+                'Content-Type': 'application/json'
+            },
+            body: JSON.stringify({ phone })
+        });
 
-            if (response.ok) {
-                const data = await response.json();
+        if (response.ok) {
+            alert('Autenticado');
+            fetchStatus();
+        } else {
+            alert('No autorizado');
+        }
+    });
 
-                if (data.connectionState === 'connected') {
-                    statusDiv.textContent = 'Estado: Conectado';
-                    qrCanvas.getContext('2d').clearRect(0, 0, qrCanvas.width, qrCanvas.height);
-                    logoutButton.style.display = 'block';
-                    autenticado = true;
-                } else if (data.connectionState === 'disconnected') {
-                    statusDiv.textContent = 'Estado: Desconectado';
-                    if (data.qrCode) {
-                        QRCode.toCanvas(qrCanvas, data.qrCode, function (error) {
-                            if (error) console.error(error);
-                        });
-                    }
-                    logoutButton.style.display = 'none';
-                    autenticado = false;
-                }
+    async function fetchStatus() {
+        const response = await fetch('/api/status', {
+            method: 'GET',
+            credentials: 'include',
+        });
+
+        const statusDiv = document.getElementById('status');
+        const qrCanvas = document.getElementById('qr');
+        const logoutButton = document.getElementById('logout');
+
+        if (response.status === 401) {
+            statusDiv.textContent = 'No autenticado';
+            autenticado = false;
+            logoutButton.style.display = 'none';
+            qrCanvas.getContext('2d').clearRect(0, 0, qrCanvas.width, qrCanvas.height);
+            return;
+        }
+
+        const data = await response.json();
+
+        if (data.connectionState === 'disconnected') {
+            autenticado = true;
+            statusDiv.textContent = 'Estado: Desconectado';
+            qrCanvas.getContext('2d').clearRect(0, 0, qrCanvas.width, qrCanvas.height);
+
+            if (data.qrCode) {
+                QRCode.toCanvas(qrCanvas, data.qrCode, function (error) {
+                    if (error) console.error(error);
+                });
             } else {
-                statusDiv.textContent = 'No hay sesión activa.';
-                qrCanvas.getContext('2d').clearRect(0, 0, qrCanvas.width, qrCanvas.height);
-                logoutButton.style.display = 'none';
-                autenticado = false;
+                qrCanvas.textContent = 'Esperando QR...';
             }
-        } catch (error) {
-            console.error('Error al verificar la sesión:', error);
+
+            logoutButton.style.display = 'none';
+
+        } else if (data.connectionState === 'connected') {
+            autenticado = true;
+            statusDiv.textContent = 'Estado: Conectado';
+            qrCanvas.getContext('2d').clearRect(0, 0, qrCanvas.width, qrCanvas.height);
+            logoutButton.style.display = 'block';
         }
     }
 
-    document.getElementById('startSession').addEventListener('click', async () => {
-        const phone = document.getElementById('phone').value.trim();
+    async function logout() {
+        await fetch('/api/logout', {
+            method: 'POST',
+            credentials: 'include',
+        });
+        autenticado = false;
+        fetchStatus();
+    }
 
-        if (!phone || !/^\d+$/.test(phone)) {
-            alert('Por favor, ingresa un número de teléfono válido.');
-            return;
-        }
+    document.getElementById('logout').addEventListener('click', logout);
 
-        const startButton = document.getElementById('startSession');
-        startButton.disabled = true;
-
-        try {
-            const response = await fetch(`/api/session/${phone}`, {
-                method: 'POST',
-                headers: {
-                    'Content-Type': 'application/json'
-                }
-            });
-
-            if (response.ok) {
-                alert('Sesión iniciada');
-                autenticado = true;
-                checkSession(phone);
-            } else {
-                const errorData = await response.json();
-                alert(errorData.message || 'Número no autorizado o error al iniciar sesión');
-            }
-        } catch (error) {
-            console.error('Error al iniciar sesión:', error);
-            alert('Error al iniciar sesión. Por favor, intenta nuevamente.');
-        } finally {
-            startButton.disabled = false;
-        }
-    });
-
-    document.getElementById('logout').addEventListener('click', async () => {
-        const phone = document.getElementById('phone').value.trim();
-
-        if (!phone) {
-            alert('Por favor, ingresa un número de teléfono.');
-            return;
-        }
-
-        try {
-            const response = await fetch(`/api/logout/${phone}`, {
-                method: 'POST',
-                headers: {
-                    'Content-Type': 'application/json'
-                }
-            });
-
-            if (response.ok) {
-                alert('Sesión cerrada');
-                autenticado = false;
-                checkSession(phone);
-            } else {
-                alert('Error al cerrar sesión.');
-            }
-        } catch (error) {
-            console.error('Error al cerrar sesión:', error);
-            alert('Error al cerrar sesión. Por favor, intenta nuevamente.');
-        }
-    });
-
-    // Verificar estado al cargar la página
-    document.addEventListener('DOMContentLoaded', () => {
-        const phone = document.getElementById('phone').value.trim();
-        if (phone) checkSession(phone);
-    });
-
-    // Actualizar estado cada 5 segundos
-    setInterval(() => {
-        const phone = document.getElementById('phone').value.trim();
-        if (phone) checkSession(phone);
-    }, 5000);
+    // Verificar estado cada 3s
+    setInterval(fetchStatus, 3000);
+    fetchStatus();
 </script>
+
 
 </body>
 </html>
