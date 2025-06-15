@@ -6,16 +6,15 @@ const router = express.Router();
 
 router.post('/enviar', verifyTokenMiddleware, async (req, res) => {
     const { numero, mensaje } = req.body;
+    const sessionId = req.user.phone; // El sessionId viene del token
 
     try {
-        await mainController.enviarMensaje(numero, mensaje, req.app.get('io'));
-        res.json({ estado: 'Mensaje enviado' });
+        await mainController.enviarMensaje(sessionId, numero, mensaje, req.app.get('io'));
+        res.json({ estado: 'Mensaje enviado', sessionId });
     } catch (error) {
-        res.status(500).json({ error: 'Error al enviar mensaje' });
+        res.status(500).json({ error: 'Error al enviar mensaje', details: error.message });
     }
 });
 
-export default (app, io) => {
-    app.set('io', io); // Para acceder a io desde el controlador si es necesario
-    app.use('/api', router);
-};
+// CORREGIDO: Exportar el router directamente en lugar de una función
+export default router;

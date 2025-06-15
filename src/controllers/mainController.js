@@ -2,8 +2,8 @@ import logger from '../logger/logger.js';
 import { enviarMensaje } from '../ws/messageHandler.js';
 
 export default {
-  async enviarMensaje(numero, mensaje, io) {
-    logger(`Enviando mensaje a ${numero}`);
-    await enviarMensaje(numero, mensaje, io);
+  async enviarMensaje(sessionId, numero, mensaje, io) {
+    logger(`[${sessionId}] Enviando mensaje a ${numero}`);
+    await enviarMensaje(sessionId, numero, mensaje, io);
   }
 };
