@@ -10,6 +10,9 @@ import { fileURLToPath } from 'url';
 import { dirname } from 'path';
 import session from './auth/session.js';
 import cookieParser from 'cookie-parser';
+import sequelize from './database/db.js';
+import './database/model/User.js';
+import './database/model/Device.js';
 
 dotenv.config();
 
@@ -32,6 +35,13 @@ messageReceiver(app, io); // <- aquí es donde se registran las rutas
 connectToWhatsApp();
 
 const PORT = process.env.PORT || 3000;
-httpServer.listen(PORT, () => {
-  console.log(`Servidor ejecutándose en el puerto ${PORT}`);
-});
+sequelize.sync({ alter: true }) 
+  .then(() => {
+    console.log('Base de datos sincronizada con PostgreSQL');
+    httpServer.listen(PORT, () => {
+      console.log(`Servidor ejecutándose en el puerto ${PORT}`);
+    });
+  })
+  .catch(err => {
+    console.error('Error al conectar con la base de datos:', err);
+  });
