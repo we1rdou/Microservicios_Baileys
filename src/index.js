@@ -3,7 +3,6 @@ import { createServer } from 'http';
 import { Server } from 'socket.io';
 import messageReceiver from './public-api/messageReceiver.js';
 import dotenv from 'dotenv';
-import { connectToWhatsApp } from './services/whatsappService.js';
 import webInterface from './public-api/webInterface.js';
 import path from 'path';
 import { fileURLToPath } from 'url';
@@ -25,14 +24,25 @@ const __dirname = dirname(__filename);
 
 app.use(cookieParser());
 app.use(express.json());
+
+// AGREGADO: Configurar io para que esté disponible en las rutas
+app.set('io', io);
+
+// Rutas de API
 app.use('/api', session);
 app.use('/api', webInterface);
+app.use('/api', messageReceiver); // CORREGIDO: Usar como middleware directo
+
+// Servir archivos estáticos
 app.use(express.static(path.join(__dirname, 'public')));
 
+// AGREGADO: Ruta para la página principal
+app.get('/', (req, res) => {
+    res.sendFile(path.join(__dirname, 'public', 'index.html'));
+});
 
-messageReceiver(app, io); // <- aquí es donde se registran las rutas
-
-connectToWhatsApp();
+// REMOVIDO: Ya no iniciamos automáticamente WhatsApp
+console.log('🚀 Servidor iniciado. Las sesiones de WhatsApp se inicializarán bajo demanda.');
 
 const PORT = process.env.PORT || 3000;
 sequelize.sync({ alter: true }) 

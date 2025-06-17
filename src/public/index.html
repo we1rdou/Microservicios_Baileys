@@ -1,127 +1,340 @@
 <!DOCTYPE html>
-<html lang="en">
+<html lang="es">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>WhatsApp Web Interface</title>
+    <title>WhatsApp Multi-Sesión</title>
     <style>
         body {
-            font-family: Arial, sans-serif;
-            text-align: center;
-            margin-top: 50px;
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            max-width: 800px;
+            margin: 0 auto;
+            padding: 20px;
+            background-color: #f5f5f5;
         }
-        #qr {
-            margin: 20px auto;
-            padding: 10px;
-            border: 1px solid #ccc;
-            display: inline-block;
+        .container {
+            background: white;
+            padding: 30px;
+            border-radius: 10px;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.1);
         }
-        #logout {
-            margin-top: 20px;
-            padding: 10px 20px;
-            background-color: #f44336;
+        .form-group {
+            margin-bottom: 20px;
+        }
+        label {
+            display: block;
+            margin-bottom: 5px;
+            font-weight: bold;
+        }
+        input, button {
+            padding: 12px;
+            font-size: 16px;
+            border: 1px solid #ddd;
+            border-radius: 5px;
+            width: 100%;
+            box-sizing: border-box;
+        }
+        button {
+            background-color: #25d366;
             color: white;
             border: none;
             cursor: pointer;
+            margin-top: 10px;
         }
-        #logout:hover {
-            background-color: #d32f2f;
+        button:hover {
+            background-color: #128c7e;
+        }
+        button:disabled {
+            background-color: #ccc;
+            cursor: not-allowed;
+        }
+        .status {
+            padding: 15px;
+            margin: 20px 0;
+            border-radius: 5px;
+            text-align: center;
+            font-weight: bold;
+        }
+        .status.connected {
+            background-color: #d4edda;
+            color: #155724;
+        }
+        .status.waiting_qr {
+            background-color: #fff3cd;
+            color: #856404;
+        }
+        .status.connecting {
+            background-color: #cce7ff;
+            color: #004085;
+        }
+        .status.disconnected {
+            background-color: #f8d7da;
+            color: #721c24;
+        }
+        .qr-container {
+            text-align: center;
+            margin: 20px 0;
+        }
+        .message-form {
+            background-color: #f8f9fa;
+            padding: 20px;
+            border-radius: 5px;
+            margin-top: 20px;
+        }
+        .hidden {
+            display: none;
+        }
+        #qrcode {
+            max-width: 300px;
+            height: auto;
+            margin: 0 auto;
+        }
+        .logout-btn {
+            background-color: #dc3545;
+        }
+        .logout-btn:hover {
+            background-color: #c82333;
         }
     </style>
-    <script src="https://cdn.jsdelivr.net/npm/qrcode/build/qrcode.min.js"></script>
 </head>
 <body>
-    <input type="text" id="phone" placeholder="Número WhatsApp">
-    <button id="startSession">Iniciar sesión</button>
+    <div class="container">
+        <h1>🚀 WhatsApp Multi-Sesión Bot</h1>
+        
+        <!-- Formulario de autenticación -->
+        <div id="auth-section">
+            <div class="form-group">
+                <label for="phone">Número de teléfono:</label>
+                <input type="text" id="phone" placeholder="Ej: 593979262806" />
+                <small>Ingresa tu número sin el símbolo +</small>
+            </div>
+            <button id="start-session" onclick="iniciarSesion()">
+                🔐 Iniciar Sesión
+            </button>
+        </div>
 
-    <h1>WhatsApp Web Interface</h1>
-    <div id="status"></div>
-    <canvas id="qr"></canvas>
-    <button id="logout" style="display: none;">Cerrar sesión</button>
+        <!-- Información de la sesión -->
+        <div id="session-section" class="hidden">
+            <h2>📱 Sesión: <span id="session-id"></span></h2>
+            <div id="status" class="status disconnected">Desconectado</div>
+            
+            <div id="qr-section" class="qr-container hidden">
+                <p>📲 Escanea este código QR con WhatsApp:</p>
+                <img id="qrcode" alt="Código QR" />
+            </div>
+            
+            <button id="logout-btn" class="logout-btn" onclick="cerrarSesion()">
+                🚪 Cerrar Sesión
+            </button>
+        </div>
 
-<script>
-    let autenticado = false;
+        <!-- Formulario de mensajes -->
+        <div id="message-section" class="message-form hidden">
+            <h3>💬 Enviar Mensaje</h3>
+            <div class="form-group">
+                <label for="numero">Número destino:</label>
+                <input type="text" id="numero" placeholder="Ej: 593999999999" />
+            </div>
+            <div class="form-group">
+                <label for="mensaje">Mensaje:</label>
+                <input type="text" id="mensaje" placeholder="Escribe tu mensaje aquí..." />
+            </div>
+            <button onclick="enviarMensaje()">📤 Enviar Mensaje</button>
+        </div>
+    </div>
 
-    document.getElementById('startSession').addEventListener('click', async () => {
-        if (autenticado) return; // Si ya está autenticado, no hacer nada
+    <script>
+        let currentSession = null;
+        let statusInterval = null;
 
-        const phone = document.getElementById('phone').value;
-        const response = await fetch('/api/session', {
-            method: 'POST',
-            credentials: 'include',
-            headers: {
-                'Content-Type': 'application/json'
-            },
-            body: JSON.stringify({ phone })
-        });
-
-        if (response.ok) {
-            alert('Autenticado');
-            fetchStatus();
-        } else {
-            alert('No autorizado');
-        }
-    });
-
-    async function fetchStatus() {
-        const response = await fetch('/api/status', {
-            method: 'GET',
-            credentials: 'include',
-        });
-
-        const statusDiv = document.getElementById('status');
-        const qrCanvas = document.getElementById('qr');
-        const logoutButton = document.getElementById('logout');
-
-        if (response.status === 401) {
-            statusDiv.textContent = 'No autenticado';
-            autenticado = false;
-            logoutButton.style.display = 'none';
-            qrCanvas.getContext('2d').clearRect(0, 0, qrCanvas.width, qrCanvas.height);
-            return;
-        }
-
-        const data = await response.json();
-
-        if (data.connectionState === 'disconnected') {
-            autenticado = true;
-            statusDiv.textContent = 'Estado: Desconectado';
-            qrCanvas.getContext('2d').clearRect(0, 0, qrCanvas.width, qrCanvas.height);
-
-            if (data.qrCode) {
-                QRCode.toCanvas(qrCanvas, data.qrCode, function (error) {
-                    if (error) console.error(error);
-                });
-            } else {
-                qrCanvas.textContent = 'Esperando QR...';
+        async function iniciarSesion() {
+            const phone = document.getElementById('phone').value.trim();
+            
+            if (!phone) {
+                alert('❌ Por favor ingresa un número de teléfono');
+                return;
             }
 
-            logoutButton.style.display = 'none';
+            const startBtn = document.getElementById('start-session');
+            startBtn.disabled = true;
+            startBtn.textContent = '🔄 Iniciando...';
 
-        } else if (data.connectionState === 'connected') {
-            autenticado = true;
-            statusDiv.textContent = 'Estado: Conectado';
-            qrCanvas.getContext('2d').clearRect(0, 0, qrCanvas.width, qrCanvas.height);
-            logoutButton.style.display = 'block';
+            try {
+                const response = await fetch('/api/session', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    credentials: 'include',
+                    body: JSON.stringify({ phone })
+                });
+
+                if (response.ok) {
+                    const data = await response.json();
+                    currentSession = data.sessionId;
+                    
+                    console.log('✅ Sesión iniciada:', data);
+                    
+                    // Mostrar sección de sesión
+                    document.getElementById('session-id').textContent = currentSession;
+                    document.getElementById('auth-section').classList.add('hidden');
+                    document.getElementById('session-section').classList.remove('hidden');
+                    
+                    // Iniciar verificación de estado
+                    checkStatus();
+                    statusInterval = setInterval(checkStatus, 2000);
+                } else {
+                    const error = await response.json();
+                    alert('❌ Error: ' + error.error);
+                }
+            } catch (error) {
+                console.error('Error:', error);
+                alert('❌ Error de conexión: ' + error.message);
+            } finally {
+                startBtn.disabled = false;
+                startBtn.textContent = '🔐 Iniciar Sesión';
+            }
         }
-    }
 
-    async function logout() {
-        await fetch('/api/logout', {
-            method: 'POST',
-            credentials: 'include',
+        async function checkStatus() {
+            if (!currentSession) return;
+
+            try {
+                const response = await fetch(`/api/status/${currentSession}`, {
+                    credentials: 'include'
+                });
+                
+                if (response.ok) {
+                    const data = await response.json();
+                    updateStatus(data);
+                } else if (response.status === 401) {
+                    console.log('❌ Token expirado');
+                    resetUI();
+                }
+            } catch (error) {
+                console.error('Error al verificar estado:', error);
+            }
+        }
+
+        function updateStatus(data) {
+            const statusDiv = document.getElementById('status');
+            const qrSection = document.getElementById('qr-section');
+            const qrImg = document.getElementById('qrcode');
+            const messageSection = document.getElementById('message-section');
+            
+            // Actualizar clase y texto del estado
+            statusDiv.className = `status ${data.connectionState}`;
+            
+            switch(data.connectionState) {
+                case 'connected':
+                    statusDiv.textContent = '✅ Conectado a WhatsApp';
+                    qrSection.classList.add('hidden');
+                    messageSection.classList.remove('hidden');
+                    break;
+                    
+                case 'waiting_qr':
+                    statusDiv.textContent = '📱 Esperando escaneo del código QR';
+                    messageSection.classList.add('hidden');
+                    
+                    if (data.qrCode) {
+                        const qrUrl = `https://api.qrserver.com/v1/create-qr-code/?size=300x300&data=${encodeURIComponent(data.qrCode)}`;
+                        qrImg.src = qrUrl;
+                        qrSection.classList.remove('hidden');
+                    }
+                    break;
+                    
+                case 'connecting':
+                    statusDiv.textContent = '🔄 Conectando a WhatsApp...';
+                    qrSection.classList.add('hidden');
+                    messageSection.classList.add('hidden');
+                    break;
+                    
+                default: // disconnected
+                    statusDiv.textContent = '❌ Desconectado';
+                    qrSection.classList.add('hidden');
+                    messageSection.classList.add('hidden');
+            }
+        }
+
+        async function cerrarSesion() {
+            if (!currentSession) return;
+
+            const logoutBtn = document.getElementById('logout-btn');
+            logoutBtn.disabled = true;
+            logoutBtn.textContent = '🔄 Cerrando...';
+
+            try {
+                const response = await fetch(`/api/logout/${currentSession}`, {
+                    method: 'POST',
+                    credentials: 'include'
+                });
+
+                if (response.ok) {
+                    console.log('✅ Sesión cerrada');
+                    resetUI();
+                } else {
+                    alert('❌ Error al cerrar sesión');
+                }
+            } catch (error) {
+                console.error('Error:', error);
+                alert('❌ Error: ' + error.message);
+            } finally {
+                logoutBtn.disabled = false;
+                logoutBtn.textContent = '🚪 Cerrar Sesión';
+            }
+        }
+
+        function resetUI() {
+            if (statusInterval) {
+                clearInterval(statusInterval);
+                statusInterval = null;
+            }
+            
+            currentSession = null;
+            document.getElementById('phone').value = '';
+            document.getElementById('auth-section').classList.remove('hidden');
+            document.getElementById('session-section').classList.add('hidden');
+            document.getElementById('message-section').classList.add('hidden');
+            document.getElementById('qr-section').classList.add('hidden');
+        }
+
+        async function enviarMensaje() {
+            const numero = document.getElementById('numero').value.trim();
+            const mensaje = document.getElementById('mensaje').value.trim();
+
+            if (!numero || !mensaje) {
+                alert('❌ Por favor completa todos los campos');
+                return;
+            }
+
+            try {
+                const response = await fetch('/api/enviar', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    credentials: 'include',
+                    body: JSON.stringify({ numero, mensaje })
+                });
+
+                if (response.ok) {
+                    alert('✅ Mensaje enviado correctamente');
+                    document.getElementById('numero').value = '';
+                    document.getElementById('mensaje').value = '';
+                } else {
+                    const error = await response.json();
+                    alert('❌ Error: ' + error.error);
+                }
+            } catch (error) {
+                console.error('Error:', error);
+                alert('❌ Error de conexión: ' + error.message);
+            }
+        }
+
+        // Manejar Enter en los campos de entrada
+        document.getElementById('phone').addEventListener('keypress', function(e) {
+            if (e.key === 'Enter') iniciarSesion();
         });
-        autenticado = false;
-        fetchStatus();
-    }
 
-    document.getElementById('logout').addEventListener('click', logout);
-
-    // Verificar estado cada 3s
-    setInterval(fetchStatus, 3000);
-    fetchStatus();
-</script>
-
-
+        document.getElementById('mensaje').addEventListener('keypress', function(e) {
+            if (e.key === 'Enter') enviarMensaje();
+        });
+    </script>
 </body>
 </html>

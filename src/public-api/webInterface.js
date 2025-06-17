@@ -1,47 +1,80 @@
 import express from 'express';
 import fs from 'fs';
 import path from 'path';
-import { connectToWhatsApp, disconnectFromWhatsApp } from '../services/whatsappService.js';
+import { connectToWhatsApp, disconnectFromWhatsApp, getSessionState, getSessionsStates } from '../services/whatsappService.js';
 import verifyTokenMiddleware from '../auth/verifyToken.js';
 
 const router = express.Router();
 
-let connectionState = 'disconnected';
-let qrCode = '';
+// Mapa para almacenar estados de conexión por sesión
+const connectionStates = new Map();
 
-export const updateConnectionState = (state, qr) => {
-    connectionState = state;
-    qrCode = qr;
+export const updateConnectionState = (sessionId, state, qr) => {
+    connectionStates.set(sessionId, { connectionState: state, qrCode: qr });
 };
 
-router.get('/status', verifyTokenMiddleware, (req, res) => {
-    res.json({ connectionState, qrCode });
+// Obtener estado de una sesión específica
+router.get('/status/:sessionId', verifyTokenMiddleware, (req, res) => {
+    const { sessionId } = req.params;
+    
+    // Verificar que el usuario tenga acceso a esta sesión
+    if (req.user.phone !== sessionId) {
+        return res.status(403).json({ error: 'No tienes acceso a esta sesión' });
+    }
+    
+    const sessionState = getSessionState(sessionId);
+    const connectionState = connectionStates.get(sessionId) || sessionState;
+    
+    res.json(connectionState);
 });
 
-router.post('/logout', verifyTokenMiddleware, async (req, res) => {
-    try {
-        await disconnectFromWhatsApp();
-        connectionState = 'disconnected';
-        qrCode = '';
+// Obtener todas las sesiones (solo para admin)
+router.get('/sessions', verifyTokenMiddleware, (req, res) => {
+    const states = getSessionsStates();
+    res.json(states);
+});
 
-        // Eliminar la carpeta de la sesión activa
-        const sessionPath = path.resolve('./auth_info_multi');
-        fs.rmSync(sessionPath, { recursive: true, force: true });
+// Cerrar sesión específica
+router.post('/logout/:sessionId', verifyTokenMiddleware, async (req, res) => {
+    const { sessionId } = req.params;
+    
+    // Verificar que el usuario tenga acceso a esta sesión
+    if (req.user.phone !== sessionId) {
+        return res.status(403).json({ error: 'No tienes acceso a esta sesión' });
+    }
+    
+    try {
+        await disconnectFromWhatsApp(sessionId);
+        connectionStates.delete(sessionId);
 
         res.clearCookie('jwt_token', {
             httpOnly: true,
-            secure: false,       // solo en HTTPS
+            secure: false,
             sameSite: 'Strict',
         });
 
-        // Generar un nuevo QR
-        const newQrCode = await connectToWhatsApp({ generateQrOnly: true });
-        qrCode = newQrCode;
-        
-        res.json({ message: 'Sesión cerrada y QR regenerado', qrCode });
+        res.json({ message: `Sesión ${sessionId} cerrada correctamente` });
     } catch (error) {
-        console.error('Error al cerrar sesión:', error);
+        console.error(`Error al cerrar sesión ${sessionId}:`, error);
         res.status(500).json({ message: 'Error al cerrar sesión' });
+    }
+});
+
+// Inicializar nueva sesión
+router.post('/init-session/:sessionId', verifyTokenMiddleware, async (req, res) => {
+    const { sessionId } = req.params;
+    
+    // Verificar que el usuario tenga acceso a esta sesión
+    if (req.user.phone !== sessionId) {
+        return res.status(403).json({ error: 'No tienes acceso a esta sesión' });
+    }
+    
+    try {
+        await connectToWhatsApp(sessionId);
+        res.json({ message: `Sesión ${sessionId} inicializada` });
+    } catch (error) {
+        console.error(`Error al inicializar sesión ${sessionId}:`, error);
+        res.status(500).json({ message: 'Error al inicializar sesión' });
     }
 });
 
