@@ -3,18 +3,28 @@ import sequelize from '../db.js';
 import User from './User.js';
 
 const Device = sequelize.define('Device', {
-  deviceName: {
-    type: DataTypes.STRING
+  telefono: {
+    type: DataTypes.STRING,
+    unique: true,
+    allowNull: false,
   },
-  status: {
-    type: DataTypes.ENUM('active', 'inactive'),
-    defaultValue: 'active'
+  estado: {
+    type: DataTypes.ENUM('desconectado', 'conectado', 'error'),
+    defaultValue: 'desconectado',
+  },
+  token: {
+    type: DataTypes.STRING,
+    allowNull: true,
+  },
+  expiraHasta: {
+    type: DataTypes.DATE,
+    allowNull: true,
   }
-}, {
-  timestamps: true
 });
 
-User.hasMany(Device, { foreignKey: 'userId' });
+
+// Relación uno a uno: un usuario tiene un solo dispositivo
+User.hasOne(Device, { foreignKey: 'userId', onDelete: 'CASCADE' });
 Device.belongsTo(User, { foreignKey: 'userId' });
 
 export default Device;

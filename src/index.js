@@ -1,57 +1,57 @@
 import express from 'express';
 import { createServer } from 'http';
 import { Server } from 'socket.io';
-import messageReceiver from './public-api/messageReceiver.js';
 import dotenv from 'dotenv';
-import webInterface from './public-api/webInterface.js';
-import path from 'path';
+import path, { dirname } from 'path';
 import { fileURLToPath } from 'url';
-import { dirname } from 'path';
-import session from './auth/session.js';
+
 import cookieParser from 'cookie-parser';
 import sequelize from './database/db.js';
 import './database/model/User.js';
 import './database/model/Device.js';
 
+import session from './auth/session.js';
+import webInterface from './public-api/webInterface.js';
+import messageReceiver from './public-api/messageReceiver.js';
+import adminRoutes from './routes/adminRoutes.js';
+
 dotenv.config();
 
+// Inicialización
 const app = express();
 const httpServer = createServer(app);
 const io = new Server(httpServer);
-
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = dirname(__filename);
 
+// Middlewares
 app.use(cookieParser());
 app.use(express.json());
-
-// AGREGADO: Configurar io para que esté disponible en las rutas
 app.set('io', io);
 
-// Rutas de API
-app.use('/api', session);
-app.use('/api', webInterface);
-app.use('/api', messageReceiver); // CORREGIDO: Usar como middleware directo
+// Rutas API
+app.use('/api', session);         // Login, logout, creación de usuarios
+app.use('/api', webInterface);    // Lógica de conexión web
+app.use('/api', messageReceiver); // Recepción y envío de mensajes vía WhatsApp
+app.use('/api', adminRoutes); // 💡 Esto registra /api/register-number
 
-// Servir archivos estáticos
+// Archivos estáticos
 app.use(express.static(path.join(__dirname, 'public')));
 
-// AGREGADO: Ruta para la página principal
+// Página principal
 app.get('/', (req, res) => {
-    res.sendFile(path.join(__dirname, 'public', 'index.html'));
+  res.sendFile(path.join(__dirname, 'public', 'index.html'));
 });
 
-// REMOVIDO: Ya no iniciamos automáticamente WhatsApp
-console.log('🚀 Servidor iniciado. Las sesiones de WhatsApp se inicializarán bajo demanda.');
-
+// Inicio del servidor
 const PORT = process.env.PORT || 3000;
-sequelize.sync({ alter: true }) 
+sequelize.sync({ alter: true })
   .then(() => {
-    console.log('Base de datos sincronizada con PostgreSQL');
+    console.log('✅ Base de datos sincronizada con PostgreSQL');
     httpServer.listen(PORT, () => {
-      console.log(`Servidor ejecutándose en el puerto ${PORT}`);
+      console.log(`🚀 Servidor ejecutándose en http://localhost:${PORT}`);
     });
   })
   .catch(err => {
-    console.error('Error al conectar con la base de datos:', err);
+    console.error('❌ Error al conectar con la base de datos:', err);
   });

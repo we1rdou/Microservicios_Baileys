@@ -2,16 +2,23 @@ import { DataTypes } from 'sequelize';
 import sequelize from '../db.js';
 
 const User = sequelize.define('User', {
-  phone: {
+  username: {
+    type: DataTypes.STRING,
+    unique: true,
+    allowNull: false, // será número de teléfono o un nombre para admin
+  },
+  password: {
     type: DataTypes.STRING,
     allowNull: false,
-    unique: true
+  },
+  role: {
+    type: DataTypes.ENUM('admin', 'user'),
+    defaultValue: 'user',
   },
   token: {
-    type: DataTypes.TEXT
+    type: DataTypes.STRING,
+    allowNull: true, // JWT del login del usuario (se guarda opcionalmente)
   }
-}, {
-  timestamps: true
 });
 
 export default User;

@@ -1,0 +1,79 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8">
+  <title>Panel Admin</title>
+    <link rel="stylesheet" href="./css/style.css">
+</head>
+<body>
+  <h2>Registrar nuevo número</h2>
+  <form id="registerForm">
+    <input type="text" id="telefono" placeholder="Número de teléfono" required><br><br>
+
+    <label for="role">Rol:</label>
+    <select id="role">
+      <option value="user" selected>Usuario</option>
+      <option value="admin">Administrador</option>
+    </select><br><br>
+
+    <label for="expiraEn">Duración del token:</label>
+    <select id="expiraEn">
+      <option value="1d">1 día</option>
+      <option value="7d" selected>7 días</option>
+      <option value="30d">30 días</option>
+    </select><br><br>
+
+    <button type="submit">Registrar</button>
+  </form>
+
+  <pre id="resultado"></pre>
+  <button id="logoutBtn">Cerrar sesión</button>
+
+  <script>
+    // Verificar sesión y rol
+    fetch('/api/me')
+      .then(res => {
+        if (!res.ok) throw new Error('No autorizado');
+        return res.json();
+      })
+      .then(user => {
+        if (user.role !== 'admin') {
+          alert('No tienes permisos para acceder a esta página.');
+          window.location.href = '/';
+        }
+      })
+      .catch(() => {
+        alert('Necesitas iniciar sesión.');
+        window.location.href = '/';
+      });
+
+    // Logout
+    document.getElementById('logoutBtn').addEventListener('click', async () => {
+      await fetch('/api/logout', { method: 'POST' });
+      window.location.href = '/';
+    });
+
+    // Registro de usuario y dispositivo
+    document.getElementById('registerForm').addEventListener('submit', async (e) => {
+      e.preventDefault();
+
+      const telefono = document.getElementById('telefono').value;
+      const role = document.getElementById('role').value;
+      const expiraEn = document.getElementById('expiraEn').value;
+
+      const res = await fetch('/api/register-number', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ telefono, role, expiraEn })
+      });
+
+      const data = await res.json();
+      if (res.ok) {
+        document.getElementById('resultado').textContent = JSON.stringify(data, null, 2);
+      } else {
+        document.getElementById('resultado').textContent = `❌ Error: ${data.error || 'Error desconocido'}`;
+      }
+    });
+  </script>
+</body>
+</html>

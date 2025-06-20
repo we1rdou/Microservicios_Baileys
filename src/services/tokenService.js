@@ -4,7 +4,7 @@ import { JWT_SECRET } from '../config.js';
 /**
  * Genera un JWT con información personalizada.
  * @param {Object} payload - Información a incluir en el token.
- * @param {string|number} expiresIn - Tiempo de expiración (ej: '1h', '7d').
+ * @param {string|number} expiresIn - Tiempo de expiración (ej: '1h', '7d', '30d').
  * @returns {string} JWT generado.
  */
 export function generateJWT(payload = {}, expiresIn = '1d') {
