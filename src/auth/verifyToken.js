@@ -1,7 +1,16 @@
 import { verifyJWT } from '../services/tokenService.js';
 
 export default function verifyTokenMiddleware(req, res, next) {
-  const token = req.cookies?.jwt_token;
+  // Buscar token en cookie o en header Authorization
+  let token = req.cookies?.jwt_token;
+
+  if (!token) {
+    const authHeader = req.headers['authorization'];
+    if (authHeader && authHeader.startsWith('Bearer ')) {
+      token = authHeader.split(' ')[1];
+    }
+  }
+
   if (!token) {
     return res.status(401).json({ error: 'Token requerido' });
   }
@@ -14,7 +23,6 @@ export default function verifyTokenMiddleware(req, res, next) {
 
     req.user = {
       ...payload,
-      phone: payload.telefono || payload.username, // Aseguramos que phone tenga un valor
     };
     next();
   } catch (err) {

@@ -1,6 +1,8 @@
 document.addEventListener('DOMContentLoaded', () => {
     // Al cargar login.html, verificar si ya hay sesión activa
-  fetch('/api/me')
+  fetch('/api/me', {
+      credentials: 'include' // Asegura que las cookies se envíen con la solicitud
+  })
     .then(res => {
       if (!res.ok) throw new Error('No autorizado');
       return res.json();
@@ -23,7 +25,9 @@ document.addEventListener('DOMContentLoaded', () => {
     const username = document.getElementById('username').value;
     const password = document.getElementById('password').value;
 
-    const res = await fetch('/api/login', {
+    const ruta = username === 'admin' ? '/api/login-admin' : '/api/login-user';
+
+    const res = await fetch(ruta, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ username, password }),

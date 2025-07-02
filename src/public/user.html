@@ -2,221 +2,81 @@
 <html lang="es">
 <head>
   <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>Usuario - WhatsApp</title>
   <script src="https://cdn.jsdelivr.net/npm/qrcode/build/qrcode.min.js"></script>
   <link rel="stylesheet" href="./css/style.css">
-
+  <script src="./js/user.js" defer></script>
 </head>
 <body>
-  <h2>Bienvenido, <span id="nombreUsuario">...</span></h2>
-  <button id="logoutBtn">Cerrar sesión</button>
-  <div id="estadoConexion">Estado: verificando...</div>
-  <div id="qr" class="hidden">Cargando QR...</div>
-  <div id="alerta" class="hidden"></div>
-  <button id="recargarQRBtn" class="hidden">Haz clic para recargar el código QR</button>
+  <div class="container">
+    <div class="header-container">
+      <div class="header-top">
+        <div>
+          <h2>Bienvenido, <span id="nombreUsuario">...</span></h2>
+          <button id="unlinkDeviceBtn" class="danger-btn">Desvincular dispositivo</button>
+        </div>
+        <div class="button-group">
+          <button id="logoutBtn">Cerrar sesión</button>
+        </div>
+      </div>
+      
+      <div class="status-container">
+        <div id="estadoConexion" class="connection-status">
+          <span class="status-icon">⏳</span>
+          <span class="status-text">Verificando conexión...</span>
+        </div>
+      </div>
+    </div>
 
-  <script>
-    let sessionId = null;
-    let intervaloEstado = null;
-    let ultimoEstado = null;
-    let qrTimeout = null;
-    let qrRefreshInterval = null;
-    let ultimoQR = '';
+    <div class="main-container">
+      <div class="qr-container">
+        <div id="qr" class="hidden">Cargando QR...</div>
+        <div id="alerta" class="hidden"></div>
+        <button id="recargarQRBtn" class="hidden">Recargar QR</button>
+      </div>
+      
+      <div class="token-btn-container">
+        <button id="verTokenBtn" class="hidden">🔒 Ver Token</button>
+      </div>
+    </div>
+  </div>
 
-    fetch('/api/me')
-      .then(res => {
-        if (!res.ok) throw new Error('No autorizado');
-        return res.json();
-      })
-      .then(async user => {
-        if (user.role !== 'user') {
-          alert('Acceso denegado.');
-          return location.href = '/';
-        }
+  <!-- Modal de confirmación para desvincular -->
+  <div id="unlinkModal" class="modal">
+    <div class="modal-content">
+      <h3>¿Desvincular dispositivo?</h3>
+      <p>Esta acción eliminará permanentemente la asociación con tu cuenta.</p>
+      <div class="modal-buttons">
+        <button id="confirmUnlinkBtn" class="danger-btn">Confirmar</button>
+        <button id="cancelUnlinkBtn">Cancelar</button>
+      </div>
+    </div>
+  </div>
 
-        sessionId = user.username;
-        document.getElementById('nombreUsuario').textContent = sessionId;
-
-        const estado = await obtenerEstado(sessionId);
-
-        if (estado.connectionState === 'connected') {
-          document.getElementById('estadoConexion').innerText = 'Estado: ¡Sesión conectada!';
-          document.getElementById('qr').classList.add('hidden');
-          return;
-        }
-
-        await iniciarSesion(sessionId);
-        cargarQR(sessionId);
-        verificarEstadoSesion();
-        intervaloEstado = setInterval(verificarEstadoSesion, 2000);
-      })
-      .catch(() => {
-        alert('Necesitas iniciar sesión.');
-        window.location.href = '/';
-      });
-
-    async function obtenerEstado(sessionId) {
-      try {
-        const res = await fetch(`/api/status/${sessionId}`);
-        if (!res.ok) throw new Error();
-        return await res.json();
-      } catch {
-        return { connectionState: 'unknown' };
-      }
-    }
-
-    async function iniciarSesion(sessionId) {
-      try {
-        const res = await fetch(`/api/init-session/${sessionId}`, { method: 'POST' });
-        if (!res.ok) throw new Error();
-      } catch (err) {
-        console.error(err);
-        document.getElementById('qr').classList.remove('hidden');
-        document.getElementById('qr').textContent = 'Error al conectar con WhatsApp';
-      }
-    }
-
-    function cargarQR(sessionId, intentos = 0) {
-      fetch(`/api/qr/${sessionId}`)
-        .then(res => {
-          if (!res.ok) throw new Error('QR no disponible');
-          return res.json();
-        })
-        .then(data => {
-          if (data.qr !== ultimoQR) {
-            ultimoQR = data.qr;
-            const qrDiv = document.getElementById('qr');
-            const recargarBtn = document.getElementById('recargarQRBtn');
-            qrDiv.innerHTML = '';
-            recargarBtn.classList.add('hidden');
-
-            const img = document.createElement('img');
-            img.src = data.qr;
-            img.alt = 'Código QR de WhatsApp';
-            img.width = 250;
-            qrDiv.appendChild(img);
-            qrDiv.classList.remove('hidden');
-            console.log('🔄 Nuevo QR actualizado en pantalla');
-          } else {
-            console.log('⏳ QR sin cambios');
-          }
-
-          // Reset temporizador si se renderiza por primera vez
-          if (!qrTimeout) {
-            qrTimeout = setTimeout(() => {
-              const qrDiv = document.getElementById('qr');
-              const recargarBtn = document.getElementById('recargarQRBtn');
-              qrDiv.classList.add('hidden');
-              qrDiv.innerHTML = '';
-              recargarBtn.classList.remove('hidden');
-              console.warn('⌛ QR expirado. Mostrar botón de recarga.');
-
-              // Detener el polling
-              clearInterval(qrRefreshInterval);
-              qrRefreshInterval = null;
-              ultimoQR = '';
-              qrTimeout = null;
-              // 🔴 Llamar al backend para detener generación del QR
-              fetch(`/api/stop-qr/${sessionId}`, { method: 'POST' });
-            }, 120000); // 2 minutos
-          }
-
-          // Iniciar polling si no está activo
-          if (!qrRefreshInterval) {
-            qrRefreshInterval = setInterval(() => {
-              cargarQR(sessionId);
-            }, 10000); // Consulta cada 10s
-          }
-        })
-        .catch(err => {
-          console.warn('⚠️ QR no disponible:', err.message);
-          if (intentos < 10) {
-            setTimeout(() => cargarQR(sessionId, intentos + 1), 1500);
-          } else {
-            document.getElementById('qr').innerText = 'No se pudo obtener el QR';
-          }
-        });
-    }
-
-
-    async function verificarEstadoSesion() {
-      try {
-        const estado = await obtenerEstado(sessionId);
-
-        const texto = {
-          connected: '¡Sesión conectada!',
-          connecting: 'Conectando...',
-          waiting_qr: 'Esperando escaneo del QR...',
-          disconnected: 'Desconectado'
-        };
-
-        let mensaje = `Estado: ${texto[estado.connectionState] || 'Desconocido'}`;
-
-      if (estado.mensaje) {
-        mensaje += ` (${estado.mensaje})`;
-        mostrarAlerta(estado.mensaje);
-
-        // Mostrar alerta emergente solo si es la primera vez que aparece
-        if (!window.__mensajeMostrado || window.__mensajeMostrado !== estado.mensaje) {
-          alert(estado.mensaje);
-          window.__mensajeMostrado = estado.mensaje;
-        }
-      } else {
-        ocultarAlerta();
-        window.__mensajeMostrado = null; // Reinicia el mensaje mostrado si se borra
-      }
-
-
-        document.getElementById('estadoConexion').innerText = mensaje;
-
-        if (estado.connectionState === 'connected') {
-          clearInterval(intervaloEstado);
-          document.getElementById('qr').classList.add('hidden');
-        } else if (estado.connectionState === 'waiting_qr' && ultimoEstado !== 'waiting_qr') {
-          cargarQR(sessionId);
-        }
-        ultimoEstado = estado.connectionState;
-
-      } catch (err) {
-        console.warn('No se pudo verificar estado:', err);
-        document.getElementById('estadoConexion').innerText = 'Estado: error';
-      }
-    }
-
-    function mostrarAlerta(mensaje) {
-      const alerta = document.getElementById('alerta');
-      alerta.textContent = mensaje;
-      alerta.classList.remove('hidden');
-    }
-
-    function ocultarAlerta() {
-      const alerta = document.getElementById('alerta');
-      alerta.textContent = '';
-      alerta.classList.add('hidden');
-    }
-
-    document.getElementById('logoutBtn').addEventListener('click', async () => {
-      if (sessionId) {
-        await fetch(`/api/logout/${sessionId}`, { method: 'POST' });
-      }
-      window.location.href = '/';
-    });
-
-    document.getElementById('recargarQRBtn').addEventListener('click', async () => {
-  const recargarBtn = document.getElementById('recargarQRBtn');
-  recargarBtn.classList.add('hidden');
-
-  try {
-    await fetch(`/api/init-session/${sessionId}`, { method: 'POST' });
-    cargarQR(sessionId); // Reinicia QR
-    verificarEstadoSesion(); // Opcionalmente refresca estado
-    console.log('🔄 Sesión reiniciada, nuevo QR solicitado.');
-  } catch (err) {
-    console.error('❌ Error al reiniciar sesión:', err);
-    recargarBtn.classList.remove('hidden');
-  }
-});
-
-  </script>
+  <!-- Modal para token -->
+  <div id="tokenModal" class="modal">
+    <div class="modal-content">
+      <!-- Formulario para contraseña -->
+      <div id="passwordPrompt">
+        <h3>Verificar Identidad</h3>
+        <input type="password" id="tokenPassword" placeholder="Ingresa tu contraseña">
+        <div class="modal-buttons">
+          <button id="confirmTokenAccess">Confirmar</button>
+          <button id="cancelTokenAccess">Cancelar</button>
+        </div>
+      </div>
+      
+      <!-- Token visible -->
+      <div id="tokenDisplay" class="hidden">
+        <h3>Tu Token de Dispositivo</h3>
+        <div class="token-value" id="tokenValue"></div>
+        <div class="token-actions">
+          <button id="copyTokenBtn">📋 Copiar</button>
+          <button id="downloadTokenBtn">⬇️ Descargar</button>
+        </div>
+      </div>
+    </div>
+  </div>
 </body>
 </html>

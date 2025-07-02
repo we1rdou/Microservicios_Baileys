@@ -19,7 +19,22 @@ const Device = sequelize.define('Device', {
   expiraHasta: {
     type: DataTypes.DATE,
     allowNull: true,
+  }, 
+  tokenVisible: {
+    type: DataTypes.BOOLEAN,
+    defaultValue: false,
+  },
+  activo: {
+  type: DataTypes.BOOLEAN,
+  defaultValue: true
+  },
+  fechaDesvinculacion: {
+    type: DataTypes.DATE,
+    allowNull: true
   }
+}, {
+  paranoid: true, // ⬅️ habilita soft delete usando deletedAt
+  timestamps: true, // ⬅️ asegura que createdAt/updatedAt también existan
 });
 
 

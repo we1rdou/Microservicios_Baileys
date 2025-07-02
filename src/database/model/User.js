@@ -15,10 +15,6 @@ const User = sequelize.define('User', {
     type: DataTypes.ENUM('admin', 'user'),
     defaultValue: 'user',
   },
-  token: {
-    type: DataTypes.STRING,
-    allowNull: true, // JWT del login del usuario (se guarda opcionalmente)
-  }
 });
 
 export default User;

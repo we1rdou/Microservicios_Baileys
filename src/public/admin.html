@@ -31,7 +31,9 @@
 
   <script>
     // Verificar sesión y rol
-    fetch('/api/me')
+    fetch('/api/me', {
+      credentials: 'include'
+    })
       .then(res => {
         if (!res.ok) throw new Error('No autorizado');
         return res.json();

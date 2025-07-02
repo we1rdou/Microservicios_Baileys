@@ -6,14 +6,15 @@ import path, { dirname } from 'path';
 import { fileURLToPath } from 'url';
 
 import cookieParser from 'cookie-parser';
+import cors from 'cors';
 import sequelize from './database/db.js';
 import './database/model/User.js';
 import './database/model/Device.js';
 
-import session from './auth/session.js';
-import webInterface from './public-api/webInterface.js';
+import whatsappRoutes from './routes/whatsappRoutes.js';
 import messageReceiver from './public-api/messageReceiver.js';
-import adminRoutes from './routes/adminRoutes.js';
+import auhRoutes from './routes/auhRoutes.js';
+import deviceRoutes from './routes/deviceRoutes.js';
 
 dotenv.config();
 
@@ -26,14 +27,18 @@ const __dirname = dirname(__filename);
 
 // Middlewares
 app.use(cookieParser());
+app.use(cors({
+  origin: process.env.CORS_ORIGIN || 'http://localhost:3000',
+  credentials: true, // Permite enviar cookies
+}));
 app.use(express.json());
 app.set('io', io);
 
 // Rutas API
-app.use('/api', session);         // Login, logout, creación de usuarios
-app.use('/api', webInterface);    // Lógica de conexión web
+app.use('/api', whatsappRoutes);    // Rutas de WhatsApp
 app.use('/api', messageReceiver); // Recepción y envío de mensajes vía WhatsApp
-app.use('/api', adminRoutes); // 💡 Esto registra /api/register-number
+app.use('/api', auhRoutes); // 💡 Esto registra /api/register-number
+app.use('/api/devices', deviceRoutes); // Rutas para dispositivos
 
 // Archivos estáticos
 app.use(express.static(path.join(__dirname, 'public')));
