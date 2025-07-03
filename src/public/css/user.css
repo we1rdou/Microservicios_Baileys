@@ -1,0 +1,139 @@
+/* Estilos específicos para user.html */
+
+/* Contenedor principal */
+.user-container {
+  max-width: 1200px;
+  margin: 0 auto;
+  padding: 1rem;
+  display: flex;
+  flex-direction: column;
+  min-height: 100vh;
+}
+
+/* Header */
+.user-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 1rem;
+  margin-bottom: 2rem;
+}
+
+.user-info {
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+}
+
+.user-actions {
+  display: flex;
+  gap: 0.8rem;
+}
+
+/* Estado de conexión */
+.user-status {
+  width: 100%;
+  margin-bottom: 2rem;
+}
+
+/* Contenedor QR */
+.qr-user-container {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  margin: 2rem auto;
+  width: 100%;
+  max-width: 300px;
+}
+
+#qr {
+  background-color: var(--bg-light);
+  border: 2px solid #c5e1a5;
+  border-radius: var(--border-radius);
+  padding: 1.5rem;
+  width: 100%;
+  aspect-ratio: 1/1;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  text-align: center;
+  transition: var(--transition);
+  box-shadow: 0 0 15px rgba(51, 105, 30, 0.2);
+}
+
+#qr img {
+  max-width: 100%;
+  height: auto;
+  border-radius: calc(var(--border-radius) - 2px);
+}
+
+/* Botón de recargar QR */
+#recargarQRBtn {
+  margin-top: 1rem;
+  width: 100%;
+}
+
+/* Botón de token */
+.token-btn-container {
+  display: flex;
+  justify-content: center;
+  margin: 2rem 0;
+}
+
+#verTokenBtn {
+  padding: 0.8rem 2rem;
+  font-size: 1.1rem;
+}
+
+/* Modales específicos de usuario */
+.user-modal .modal-content {
+  max-width: 400px;
+}
+
+.user-modal h3 {
+  color: var(--primary-dark);
+  margin-bottom: 1.5rem;
+  text-align: center;
+}
+
+/* Estilos para el input de contraseña en el modal */
+#tokenPassword {
+  width: 100%;
+  padding: 0.8rem;
+  margin: 1rem 0;
+  border: 1px solid var(--border-color);
+  border-radius: var(--border-radius);
+}
+
+/* Adaptaciones responsive */
+@media (max-width: 768px) {
+  .user-header {
+    flex-direction: column;
+    align-items: flex-start;
+  }
+  
+  .user-actions {
+    width: 100%;
+    justify-content: space-between;
+  }
+  
+  #unlinkDeviceBtn,
+  #logoutBtn {
+    flex-grow: 1;
+  }
+}
+
+@media (max-width: 480px) {
+  .user-container {
+    padding: 0.8rem;
+  }
+  
+  .qr-user-container {
+    margin: 1rem auto;
+  }
+  
+  .user-modal .modal-content {
+    padding: 1.5rem;
+  }
+}

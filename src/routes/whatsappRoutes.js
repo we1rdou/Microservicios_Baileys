@@ -9,7 +9,6 @@ import {
   getSessionState,
   setSessionState,
 } from '../services/whatsappService.js';
-import { isNumberAuthorized } from '../services/numberAuthService.js';
 import { verificarTokenConContrasena } from '../services/deviceService.js';
 import User  from '../database/model/User.js';
 import Device from '../database/model/Device.js';

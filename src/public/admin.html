@@ -1,81 +1,86 @@
 <!DOCTYPE html>
-<html lang="es">
+<html lang="es" class="dark">
 <head>
   <meta charset="UTF-8">
   <title>Panel Admin</title>
-    <link rel="stylesheet" href="./css/style.css">
+  <script src="https://cdn.tailwindcss.com"></script>
 </head>
-<body>
-  <h2>Registrar nuevo número</h2>
-  <form id="registerForm">
-    <input type="text" id="telefono" placeholder="Número de teléfono" required><br><br>
+<body class="bg-gray-50 dark:bg-gray-900 text-gray-800 dark:text-gray-100 min-h-screen p-6 font-sans">
+  <div class="max-w-5xl mx-auto bg-white dark:bg-gray-800 shadow-lg p-6 rounded-xl">
+    
+    <!-- Encabezado -->
+    <div class="flex justify-between items-center mb-8">
+      <div>
+        <h2 class="text-2xl font-bold text-gray-800 dark:text-white">
+          <span id="nombreUsuario" class="hidden">...</span>
+        </h2>
+        <button id="unlinkDeviceBtn" class="hidden mt-2 text-sm text-red-500 hover:underline">Desvincular dispositivo</button>
+      </div>
+      <div>
+        <button id="logoutBtn" class="bg-red-500 hover:bg-red-600 text-white px-4 py-2 rounded-lg transition-colors duration-200 shadow-sm">Cerrar sesión</button>
+      </div>
+    </div>
 
-    <label for="role">Rol:</label>
-    <select id="role">
-      <option value="user" selected>Usuario</option>
-      <option value="admin">Administrador</option>
-    </select><br><br>
+    <!-- Registro -->
+    <h2 class="text-xl font-semibold text-gray-700 dark:text-gray-300 mb-3">Registrar nuevo número</h2>
+    <form id="registerForm" class="flex gap-4 mb-8">
+      <input type="text" id="telefono" placeholder="Número de teléfono" required
+             class="border border-gray-300 dark:border-gray-600 rounded-lg px-4 py-2 w-full bg-white dark:bg-gray-700 text-gray-800 dark:text-gray-100 focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none transition">
+      <button type="submit" class="bg-blue-500 hover:bg-blue-600 text-white px-6 py-2 rounded-lg transition-colors duration-200 shadow-sm">Registrar</button>
+    </form>
 
-    <label for="expiraEn">Duración del token:</label>
-    <select id="expiraEn">
-      <option value="1d">1 día</option>
-      <option value="7d" selected>7 días</option>
-      <option value="30d">30 días</option>
-    </select><br><br>
+    <!-- Resultado -->
+    <pre id="resultado" class="bg-gray-100 dark:bg-gray-700 p-4 rounded-lg mb-8 text-gray-800 dark:text-gray-100 border border-gray-200 dark:border-gray-600"></pre>
 
-    <button type="submit">Registrar</button>
-  </form>
+    <!-- Usuarios -->
+    <h2 class="text-xl font-semibold text-gray-700 dark:text-gray-300 mb-3">Usuarios registrados</h2>
+    <div class="max-h-64 overflow-y-auto mb-8 border border-gray-300 dark:border-gray-600 rounded-lg shadow-sm">
+      <table id="tablaUsuarios" class="min-w-full divide-y divide-gray-300 dark:divide-gray-600 text-sm">
+        <!-- Se llenará con JavaScript -->
+      </table>
+    </div>
 
-  <pre id="resultado"></pre>
-  <button id="logoutBtn">Cerrar sesión</button>
+    <!-- Actividad -->
+    <h2 class="text-xl font-semibold text-gray-700 dark:text-gray-300 mb-3">Registros de Actividad</h2>
+    <div class="max-h-96 overflow-y-auto mb-8 border border-gray-300 dark:border-gray-600 rounded-lg shadow-sm">
+      <table id="tablaActividad" class="min-w-full divide-y divide-gray-300 dark:divide-gray-600 text-sm">
+        <thead class="bg-gray-100 dark:bg-gray-700 text-gray-700 dark:text-gray-300 sticky top-0 z-1">
+          <tr>
+            <th class="px-4 py-3 text-left font-medium border-b border-gray-300 dark:border-gray-600 bg-gray-50 dark:bg-gray-700">Fecha</th>
+            <th class="px-4 py-3 text-left font-medium border-b border-gray-300 dark:border-gray-600 bg-gray-50 dark:bg-gray-700">Descripción</th>
+            <th class="px-4 py-3 text-left font-medium border-b border-gray-300 dark:border-gray-600 bg-gray-50 dark:bg-gray-700">Acción</th>
+            <th class="px-4 py-3 text-left font-medium border-b border-gray-300 dark:border-gray-600 bg-gray-50 dark:bg-gray-700">IP</th>
+            <th class="px-4 py-3 text-left font-medium border-b border-gray-300 dark:border-gray-600 bg-gray-50 dark:bg-gray-700">Usuario</th>
+          </tr>
+        </thead>
+        <tbody class="bg-white dark:bg-gray-800 divide-y divide-gray-200 dark:divide-gray-700">
+          <!-- Se llenará dinámicamente -->
+        </tbody>
+      </table>
+    </div>
 
-  <script>
-    // Verificar sesión y rol
-    fetch('/api/me', {
-      credentials: 'include'
-    })
-      .then(res => {
-        if (!res.ok) throw new Error('No autorizado');
-        return res.json();
-      })
-      .then(user => {
-        if (user.role !== 'admin') {
-          alert('No tienes permisos para acceder a esta página.');
-          window.location.href = '/';
-        }
-      })
-      .catch(() => {
-        alert('Necesitas iniciar sesión.');
-        window.location.href = '/';
-      });
+    <!-- Dispositivos -->
+    <h2 class="text-xl font-semibold text-gray-700 dark:text-gray-300 mb-3">Dispositivos registrados</h2>
+    <div class="max-h-64 overflow-y-auto mb-8 border border-gray-300 dark:border-gray-600 rounded-lg shadow-sm">
+      <table id="tablaDispositivos" class="min-w-full divide-y divide-gray-300 dark:divide-gray-600 text-sm">
+        <!-- Se llenará con JavaScript -->
+      </table>
+    </div>
 
-    // Logout
-    document.getElementById('logoutBtn').addEventListener('click', async () => {
-      await fetch('/api/logout', { method: 'POST' });
-      window.location.href = '/';
-    });
+    <!-- Modal -->
+    <div id="modalInfo" class="fixed inset-0 bg-black bg-opacity-50 flex justify-center items-center hidden z-50">
+      <div class="bg-white dark:bg-gray-800 p-6 rounded-xl shadow-xl w-full max-w-md mx-4">
+        <h3 class="text-lg font-bold mb-3 text-gray-900 dark:text-white"></h3>
+        <div id="infoValue" class="bg-gray-100 dark:bg-gray-700 p-4 rounded-lg text-sm break-words mb-4 text-gray-800 dark:text-gray-100 border border-gray-200 dark:border-gray-600"></div>
+        <div class="flex justify-end gap-3">
+          <button id="copyInfoBtn" class="bg-green-500 hover:bg-green-600 text-white px-4 py-2 rounded-lg transition-colors duration-200 shadow-sm">📋 Copiar</button>
+          <button id="closeInfoBtn" class="bg-gray-500 hover:bg-gray-600 text-white px-4 py-2 rounded-lg transition-colors duration-200 shadow-sm">Cerrar</button>
+        </div>
+      </div>
+    </div>
 
-    // Registro de usuario y dispositivo
-    document.getElementById('registerForm').addEventListener('submit', async (e) => {
-      e.preventDefault();
+  </div>
 
-      const telefono = document.getElementById('telefono').value;
-      const role = document.getElementById('role').value;
-      const expiraEn = document.getElementById('expiraEn').value;
-
-      const res = await fetch('/api/register-number', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ telefono, role, expiraEn })
-      });
-
-      const data = await res.json();
-      if (res.ok) {
-        document.getElementById('resultado').textContent = JSON.stringify(data, null, 2);
-      } else {
-        document.getElementById('resultado').textContent = `❌ Error: ${data.error || 'Error desconocido'}`;
-      }
-    });
-  </script>
+  <script src="./js/admin.js"></script>
 </body>
 </html>
