@@ -1,7 +1,7 @@
 import { generarTokenParaDispositivo } from '../services/deviceService.js';
 import ms from 'ms';
 import { generateJWT } from '../services/tokenService.js';
-import bcrypt from 'bcrypt';
+import bcrypt from 'bcryptjs';
 import User from '../database/model/User.js';
 import Device from '../database/model/Device.js';
 

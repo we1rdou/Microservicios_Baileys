@@ -1,0 +1,130 @@
+/* login-compact.css - Estilo compacto sin scroll */
+
+:root {
+  --primary-color: #689f38;
+  --primary-dark: #558b2f;
+  --text-color: #333;
+  --bg-light: #ffffff;
+  --border-radius: 6px;
+  --box-shadow: 0 1px 5px rgba(0, 0, 0, 0.1);
+  --transition: all 0.2s ease;
+}
+
+/* Estructura minimalista */
+body {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: flex-start;
+  min-height: 100vh;
+  background: #f5f9f0;
+  font-family: 'Segoe UI', system-ui, sans-serif;
+  padding: 20px;
+  padding-top: 40px;
+  overflow: hidden;
+  margin: 0;
+}
+
+/* Formulario ultra compacto */
+#loginForm {
+  background: var(--bg-light);
+  padding: 1.5rem;
+  border-radius: var(--border-radius);
+  box-shadow: var(--box-shadow);
+  width: 100%;
+  max-width: 320px;
+}
+
+/* Título compacto */
+#loginForm h2 {
+  color: var(--primary-dark);
+  text-align: center;
+  margin: 0 0 1rem 0;
+  font-size: 1.4rem;
+  font-weight: 600;
+}
+
+/* Inputs minimalistas */
+#loginForm input {
+  width: 92%;
+  padding: 0.7rem;
+  margin-bottom: 0.8rem;
+  border: 1px solid #e0e0e0;
+  border-radius: var(--border-radius);
+  font-size: 0.9rem;
+  transition: var(--transition);
+}
+
+#loginForm input:focus {
+  outline: none;
+  border-color: var(--primary-color);
+  box-shadow: 0 0 0 2px rgba(104, 159, 56, 0.2);
+}
+
+/* Botón compacto */
+#loginForm button {
+  width: 100%;
+  padding: 0.7rem;
+  background: var(--primary-color);
+  color: white;
+  border: none;
+  border-radius: var(--border-radius);
+  font-size: 0.9rem;
+  font-weight: 500;
+  cursor: pointer;
+  transition: var(--transition);
+  margin-top: 0.2rem;
+}
+
+#loginForm button:hover {
+  background: var(--primary-dark);
+}
+
+/* Efecto de carga compacto */
+#loginForm button.loading {
+  padding: 0.65rem;
+}
+
+#loginForm button.loading::after {
+  width: 16px;
+  height: 16px;
+  border-width: 2px;
+}
+
+/* Mensajes compactos */
+.login-message {
+  padding: 0.5rem;
+  font-size: 0.85rem;
+  margin-bottom: 0.7rem;
+}
+
+/* Responsive para móviles */
+@media (max-width: 400px) {
+  body {
+    padding: 15px;
+    padding-top: 30px;
+  }
+  
+  #loginForm {
+    padding: 1.2rem;
+    max-width: 280px;
+  }
+  
+  #loginForm h2 {
+    font-size: 1.3rem;
+  }
+  
+  #loginForm input, 
+  #loginForm button {
+    padding: 0.6rem;
+  }
+}
+
+@keyframes fadeIn {
+  from { opacity: 0; transform: translateY(8px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+
+@keyframes spin {
+  to { transform: translate(-50%, -50%) rotate(360deg); }
+}

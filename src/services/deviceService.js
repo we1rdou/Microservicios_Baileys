@@ -3,7 +3,7 @@ import User from '../database/model/User.js';
 import Device from '../database/model/Device.js';
 import { generateJWT } from './tokenService.js';
 import ms from 'ms';
-import bcrypt from 'bcrypt';
+import bcrypt from 'bcryptjs';
 
 
 // Función para generar un token JWT para un dispositivo

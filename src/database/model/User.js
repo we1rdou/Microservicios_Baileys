@@ -5,7 +5,7 @@ const User = sequelize.define('User', {
   username: {
     type: DataTypes.STRING,
     unique: true,
-    allowNull: false, // será número de teléfono o un nombre para admin
+    allowNull: false, 
   },
   password: {
     type: DataTypes.STRING,

@@ -1,31 +1,26 @@
 import bcrypt from 'bcryptjs';
 import { generateJWT } from '../services/tokenService.js';
-import ms from 'ms';
 import User  from '../database/model/User.js';
 import Device from '../database/model/Device.js';
+import { verificarCredenciales, setTokenCookie } from '../utils/authUtils.js';
 
 // funcion para verificar si el usuario es admin
 export const loginAdmin = async (req, res) => {
   const { username, password } = req.body;
+  const resultado = await verificarCredenciales(username, password);
 
-  if (!username || !password) {
-    return res.status(400).json({ error: 'Username y password requeridos' });
+  if (!resultado.success){
+    return res.status(401).json({ error: resultado.error });
   }
 
-  const user = await User.findOne({ where: { username } });
-  if (!user) return res.status(401).json({ error: 'Usuario no encontrado' });
+  const user = resultado.user;
 
-  const valid = await bcrypt.compare(password, user.password);
-  if (!valid) return res.status(401).json({ error: 'Contraseña incorrecta' });
+  if (user.role !== 'admin') {
+    return res.status(403).json({ error: 'No tienes permisos de administrador' });
+  }
 
-  const token = generateJWT({ id: user.id, telefono: user.username, role: user.role}, '1d');
-
-  res.cookie('jwt_token', token, {
-    httpOnly: true,
-    secure: process.env.NODE_ENV === 'production',
-    sameSite: 'Strict',
-    maxAge: ms('1d'),
-  });
+  const token = generateJWT({ id: user.id, role: user.role }, '1d');
+  setTokenCookie(res, token);
 
   res.json({
     message: 'Login exitoso',
@@ -78,23 +73,19 @@ export const registrarNumero = async (req, res) => {
   }
 }
 
+// Login para usuario normal (no administrador)
 export const loginUsuario = async (req, res) => {
   const { username, password } = req.body;
+  const resultado = await verificarCredenciales(username, password);
 
-  const user = await User.findOne({ where: { username } });
-  if (!user) return res.status(401).json({ error: 'Usuario no encontrado' });
+  if (!resultado.success) {
+    return res.status(401).json({ error: resultado.error });
+  }
 
-  const valid = await bcrypt.compare(password, user.password);
-  if (!valid) return res.status(401).json({ error: 'Contraseña incorrecta' });
+  const user = resultado.user;
 
-  const token = generateJWT({ id:user.id, role: user.role }, '1d');
-
-  res.cookie('jwt_token', token, {
-    httpOnly: true,
-    secure: process.env.NODE_ENV === 'production',
-    sameSite: 'Strict',
-    maxAge: ms('1d'),
-  });
+  const token = generateJWT({ id: user.id, role: user.role }, '1d');
+  setTokenCookie(res, token);
 
   res.json({
     message: 'Login de usuario exitoso',

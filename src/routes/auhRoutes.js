@@ -1,30 +1,27 @@
 import express from 'express';
-import verifyToken from '../auth/verifyToken.js';
-import { registrarNumero } from '../controllers/authController.js';
+import verifyTokenMiddleware from '../auth/verifyToken.js';
 import { loginAdmin, loginUsuario } from '../controllers/authController.js';
+import { registrarActividadUsuario } from '../auth/activityLogger.js';
 
 const router = express.Router();
 
-// Ruta para login de usuarios normales
+// Login de usuarios y admin (no requieren token)
 router.post('/login-user', loginUsuario);
-
-// Ruta para login del administrador
 router.post('/login-admin', loginAdmin);
 
-router.post('/register-number', verifyToken, (req, res, next) => {
-  if (req.user.role !== 'admin') {
-    return res.status(403).json({ error: 'Solo admin puede registrar números' });
-  }
-  next();
-}, registrarNumero);
+// Aplicar middleware de verificación de token para el resto
+router.use(verifyTokenMiddleware);
 
+// Registrar actividad solo para usuarios normales
+router.use(registrarActividadUsuario);
+
+// Logout
 router.post('/logout', (req, res) => {
   res.clearCookie('jwt_token', {
     httpOnly: true,
     secure: process.env.NODE_ENV === 'production',
     sameSite: 'Strict',
   });
-
   res.json({ message: 'Sesión cerrada' });
 });
 

@@ -11,10 +11,11 @@ import sequelize from './database/db.js';
 import './database/model/User.js';
 import './database/model/Device.js';
 
-import whatsappRoutes from './routes/whatsappRoutes.js';
-import messageReceiver from './public-api/messageReceiver.js';
 import auhRoutes from './routes/auhRoutes.js';
-import deviceRoutes from './routes/deviceRoutes.js';
+import adminRoutes from './routes/adminRoutes.js';
+import { registrarActividadUsuario } from './auth/activityLogger.js';
+import verifyTokenMiddleware from './auth/verifyToken.js';
+import apiRouter from './routes/apiRoutes.js';
 
 dotenv.config();
 
@@ -35,11 +36,9 @@ app.use(express.json());
 app.set('io', io);
 
 // Rutas API
-app.use('/api', whatsappRoutes);    // Rutas de WhatsApp
-app.use('/api', messageReceiver); // Recepción y envío de mensajes vía WhatsApp
 app.use('/api', auhRoutes); // 💡 Esto registra /api/register-number
-app.use('/api/devices', deviceRoutes); // Rutas para dispositivos
-
+app.use('/admin', adminRoutes); // Rutas de administración
+app.use('/api', verifyTokenMiddleware, registrarActividadUsuario, apiRouter);
 // Archivos estáticos
 app.use(express.static(path.join(__dirname, 'public')));
 
