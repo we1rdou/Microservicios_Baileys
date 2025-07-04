@@ -24,10 +24,6 @@ const Device = sequelize.define('Device', {
     type: DataTypes.BOOLEAN,
     defaultValue: false,
   },
-  activo: {
-  type: DataTypes.BOOLEAN,
-  defaultValue: true
-  },
   fechaDesvinculacion: {
     type: DataTypes.DATE,
     allowNull: true

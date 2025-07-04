@@ -1,3 +1,4 @@
 node_modules/
 .env
 auth_tokens.json
+auth_info_multi/

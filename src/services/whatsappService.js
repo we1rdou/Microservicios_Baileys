@@ -5,6 +5,7 @@ import fs from 'fs';
 import { updateConnectionState } from '../routes/whatsappRoutes.js';
 import { generarTokenParaDispositivo } from './deviceService.js';
 import Device from '../database/model/Device.js';
+import e from 'express';
 
 // Sesiones en memoria
 const sessions = new Map();
@@ -101,6 +102,14 @@ function setupSocketEvents(sock, sessionId, saveCreds) {
             try {
                 const device = await Device.findOne({ where: { telefono: sessionId } });
                 const { token, reutilizado } = await generarTokenParaDispositivo(sessionId);
+
+                await Device.update({
+                    estado: 'conectado',
+                    fechaDesvinculacion: null,
+                }, {
+                    where: { telefono: sessionId }
+                });
+                console.log(`[${sessionId}] ✅ Dispositivo vinculado correctamente`);
                 
                 // Actualizar estado con información del token
                 sessionState.mostrarToken = device?.tokenVisible || false;
@@ -201,6 +210,18 @@ export async function disconnectFromWhatsApp(sessionId) {
         deleteSession(sessionId);
         deleteSessionState(sessionId);
         deleteSessionDirectory(sessionId);
+
+        try {
+            await Device.update({
+                estado: 'desconectado',
+                fechaDesvinculacion: new Date()
+            }, {
+                where: { telefono: sessionId }  
+            });
+            console.log(`[${sessionId}] ✅ Dispositivo desvinculado correctamente`);
+            } catch (error) {
+            console.error(`[${sessionId}] ❌ Error al desvincular dispositivo:`, error);
+            }
     }
 }
 
