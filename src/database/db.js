@@ -5,9 +5,10 @@ import { fileURLToPath } from 'url';
 
 dotenv.config();
 
-// Obtener la ruta del directorio actual para ubicxar el archivo SQLite
-const __dirname = path.dirname(fileURLToPath(import.meta.url));
-const dbPath = path.join(__dirname, '../../database.sqlite');
+// En producción (Render), usar directorio persistente
+const dbPath = process.env.NODE_ENV === 'production' 
+  ? '/var/data/database.sqlite'  // Directorio persistente en Render
+  : path.join(__dirname, '../../database.sqlite');  // Local development
 
 const sequelize = new Sequelize({
   dialect: 'sqlite',

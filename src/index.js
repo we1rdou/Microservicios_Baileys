@@ -50,7 +50,13 @@ app.get('/', (req, res) => {
 
 // Inicio del servidor
 const PORT = process.env.PORT || 3000;
-sequelize.sync({ alter: true })
+
+// Opciones de sincronización según entorno
+const syncOptions = process.env.NODE_ENV === 'production' 
+  ? { force: false }  // Más seguro para producción
+  : { alter: true };  // Desarrollo
+
+sequelize.sync(syncOptions)
   .then(() => {
     console.log('✅ Base de datos sincronizada con SQLite');
     httpServer.listen(PORT, () => {

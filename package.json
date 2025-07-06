@@ -4,6 +4,7 @@
   "main": "src/index.js",
   "type": "module",
   "scripts": {
+    "createadmin": "node scripts/createAdmin.js",
     "start": "node src/index.js"
   },
   "dependencies": {
