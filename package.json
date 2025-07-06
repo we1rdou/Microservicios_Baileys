@@ -5,7 +5,7 @@
   "type": "module",
   "scripts": {
     "createadmin": "node scripts/createAdmin.js",
-    "start": "node src/index.js"
+    "start": "node scripts/createAdmin.js && node src/index.js"
   },
   "dependencies": {
     "baileys": "^6.7.18",
