@@ -5,9 +5,9 @@ import { fileURLToPath } from 'url';
 
 dotenv.config();
 
-// En producción (Render), usar directorio persistente
+// En producción (Render), usar directorio con permisos
 const dbPath = process.env.NODE_ENV === 'production' 
-  ? '/var/data/database.sqlite'  // Directorio persistente en Render
+  ? './database.sqlite'  // Directorio del proyecto en Render
   : path.join(__dirname, '../../database.sqlite');  // Local development
 
 const sequelize = new Sequelize({
