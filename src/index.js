@@ -10,6 +10,7 @@ import cors from 'cors';
 import sequelize from './database/db.js';
 import './database/model/User.js';
 import './database/model/Device.js';
+import './database/model/ActivityLog.js'; // Añadir esta línea
 
 import auhRoutes from './routes/auhRoutes.js';
 import adminRoutes from './routes/adminRoutes.js';
@@ -51,7 +52,7 @@ app.get('/', (req, res) => {
 const PORT = process.env.PORT || 3000;
 sequelize.sync({ alter: true })
   .then(() => {
-    console.log('✅ Base de datos sincronizada con PostgreSQL');
+    console.log('✅ Base de datos sincronizada con SQLite');
     httpServer.listen(PORT, () => {
       console.log(`🚀 Servidor ejecutándose en http://localhost:${PORT}`);
     });
