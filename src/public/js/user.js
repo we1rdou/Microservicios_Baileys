@@ -5,6 +5,7 @@ let qrRefreshInterval = null;
 let ultimoQRMostrado = '';
 let ultimoTextoQR = '';
 let qrUpdateTimeout = null;
+let passwordTemporalPendiente = false;
 
 // Clases CSS reutilizables
 const CSS = {
@@ -67,6 +68,8 @@ function configurarEventListeners() {
     document.getElementById('copyTokenBtn')?.addEventListener('click', copiarToken);
     document.getElementById('downloadTokenBtn')?.addEventListener('click', descargarToken);
     document.getElementById('cancelTokenAccess')?.addEventListener('click', ocultarModalToken);
+    document.getElementById('passwordForm')?.addEventListener('submit', manejarCambioPassword);
+    document.getElementById('verTokenBtn')?.addEventListener('click', () => mostrarTokenModal(null, false));
     
     // Modal se cierra al hacer clic fuera
     document.getElementById('tokenModal')?.addEventListener('click', (e) => {
@@ -90,6 +93,37 @@ function configurarEventListeners() {
     
     // Recargar QR
     document.getElementById('recargarQRBtn')?.addEventListener('click', reiniciarSesion);
+
+        // Modal de cambio de contraseña
+    document.getElementById('passwordForm')?.addEventListener('submit', manejarCambioPassword);
+    
+    // Mostrar/ocultar contraseña
+    document.getElementById('toggleNewPassword')?.addEventListener('click', () => togglePasswordVisibility('newPassword'));
+    document.getElementById('toggleConfirmPassword')?.addEventListener('click', () => togglePasswordVisibility('confirmPassword'));
+  
+}
+
+// Función para mostrar/ocultar contraseña
+function togglePasswordVisibility(inputId) {
+    const input = document.getElementById(inputId);
+    const toggleButton = document.getElementById('toggle' + inputId.charAt(0).toUpperCase() + inputId.slice(1));
+    
+    if (input.type === 'password') {
+        input.type = 'text';
+        toggleButton.innerHTML = `
+            <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13.875 18.825A10.05 10.05 0 0112 19c-4.478 0-8.268-2.943-9.543-7a9.97 9.97 0 011.563-3.029m5.858.908a3 3 0 114.243 4.243M9.878 9.878l4.242 4.242M9.88 9.88l-3.29-3.29m7.532 7.532l3.29 3.29M3 3l3.59 3.59m0 0A9.953 9.953 0 0112 5c4.478 0 8.268 2.943 9.543 7a10.025 10.025 0 01-4.132 5.411m0 0L21 21" />
+            </svg>
+        `;
+    } else {
+        input.type = 'password';
+        toggleButton.innerHTML = `
+            <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z" />
+            </svg>
+        `;
+    }
 }
 
 // Verificar estado inicial
@@ -118,6 +152,10 @@ async function verificarAutenticacion() {
         if (user.role !== 'user') {
             mostrarAlerta('Acceso denegado. Redirigiendo...', 'error');
             throw new Error('Acceso denegado');
+        }
+
+        if (user.passwordTemporal){
+            mostrarPasswordModal();
         }
         
         return user;
@@ -358,6 +396,15 @@ function ocultarModalToken() {
     document.getElementById('tokenPassword').value = '';
 }
 
+// Mostrar modal de cambio de contraseña
+function mostrarPasswordModal() {
+    const modal = document.getElementById('passwordModal');
+    if (modal) {
+        modal.classList.remove('hidden');
+        document.getElementById('newPassword')?.focus();
+    }
+}
+
 // Verificar contraseña para token
 async function verificarContrasena() {
     const password = document.getElementById('tokenPassword').value;
@@ -466,10 +513,9 @@ function mostrarAlerta(mensaje, tipo = 'info') {
     const alerta = document.getElementById('alerta');
     if (!alerta) return;
 
-    alerta.classList.remove('hidden');
-    
-    // Reset classes
-    alerta.className = 'p-3 rounded-lg mb-4 text-center hidden';
+    // Reset classes sin volver a añadir 'hidden'
+    alerta.className = 'p-3 rounded-lg mb-4 text-center';
+   
     
     // Aplicar clases según tipo
     switch (tipo) {
@@ -487,6 +533,7 @@ function mostrarAlerta(mensaje, tipo = 'info') {
     }
     
     alerta.textContent = mensaje;
+    alerta.classList.remove('hidden');
     
     // Ocultar después de 5 segundos
     setTimeout(() => {
@@ -522,7 +569,6 @@ async function obtenerEstado(sessionId) {
         return { connectionState: 'unknown' };
     }
 }
-
 // Iniciar sesión
 async function iniciarSesion(sessionId) {
     try {
@@ -534,5 +580,75 @@ async function iniciarSesion(sessionId) {
     } catch (error) {
         console.error('Error al iniciar sesión:', error);
         throw error;
+    }
+}
+
+// Manejar envío de formulario de cambio de contraseña
+async function manejarCambioPassword(e) {
+    e.preventDefault();
+    
+    const newPassword = document.getElementById('newPassword').value;
+    const confirmPassword = document.getElementById('confirmPassword').value;
+    const errorDiv = document.getElementById('passwordError');
+
+    errorDiv.classList.add('hidden');
+    
+    // Validar contraseñas
+    if (newPassword !== confirmPassword) {
+        errorDiv.textContent = 'Las contraseñas no coinciden';
+        errorDiv.classList.remove('hidden');
+        return;
+    }
+
+        // Validaciones de seguridad
+    const validaciones = [
+        { condicion: newPassword.length >= 8, mensaje: 'La contraseña debe tener al menos 8 caracteres' },
+        { condicion: /[A-Z]/.test(newPassword), mensaje: 'Debe incluir al menos una letra mayúscula' },
+        { condicion: /[a-z]/.test(newPassword), mensaje: 'Debe incluir al menos una letra minúscula' },
+        { condicion: /[0-9]/.test(newPassword), mensaje: 'Debe incluir al menos un número' },
+        { condicion: /[^A-Za-z0-9]/.test(newPassword), mensaje: 'Debe incluir al menos un carácter especial (ej: !@#$%^&*)' }
+    ];
+    
+    // Verificar cada validación
+    for (const validacion of validaciones) {
+        if (!validacion.condicion) {
+            errorDiv.textContent = validacion.mensaje;
+            errorDiv.classList.remove('hidden');
+            return;
+        }
+    }
+    
+    const saveBtn = document.getElementById('savePasswordBtn');
+    const originalText = saveBtn.textContent;
+    try {
+        // Deshabilitar botón mientras se procesa
+        saveBtn.disabled = true;
+        saveBtn.textContent = 'Guardando...';
+        
+        const response = await fetch('/api/cambiar-password', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ password: newPassword }),
+            credentials: 'include'
+        });
+        
+        const data = await response.json();
+        
+        if (!response.ok) {
+            throw new Error(data.error || 'Error al cambiar contraseña');
+        }
+        // Éxito
+        document.getElementById('passwordModal').classList.add('hidden');
+        mostrarAlerta('Contraseña actualizada correctamente. Tu cuenta ahora está más segura.', 'success');
+        passwordTemporalPendiente = false;
+        
+    } catch (error) {
+        console.error('Error al cambiar contraseña:', error);
+        errorDiv.textContent = error.message || 'Error al cambiar contraseña';
+        errorDiv.classList.remove('hidden');
+    } finally {
+        // Restaurar botón
+        saveBtn.disabled = false;
+        saveBtn.textContent = originalText;
     }
 }

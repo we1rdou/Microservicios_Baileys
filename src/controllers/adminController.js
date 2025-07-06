@@ -55,6 +55,7 @@ export const asignarPasswordUsuario = async (req, res) => {
     const hash = await bcrypt.hash(nuevaPassword, 10);
 
     usuario.password = hash;
+    usuario.passwordTemporal = true; // Marcar como temporal
     await usuario.save();
     
     res.json({ 

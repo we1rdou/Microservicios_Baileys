@@ -29,6 +29,7 @@ router.get('/me', verifyTokenMiddleware, async (req, res) => {
       id: user.id,
       username: user.username,
       role: user.role,
+      passwordTemporal: user.passwordTemporal,
     });
   } catch (err) {
     res.status(500).json({ error: 'Error al obtener usuario' });

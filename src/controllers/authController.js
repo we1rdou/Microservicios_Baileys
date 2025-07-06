@@ -90,6 +90,50 @@ export const loginUsuario = async (req, res) => {
   res.json({
     message: 'Login de usuario exitoso',
     username: user.username,
-    role: user.role
+    role: user.role,
+    passwordTemporal: user.passwordTemporal
   });
+};
+
+// Añadir al final del archivo
+export const cambiarPassword = async (req, res) => {
+  try {
+    const userId = req.user.id; // Extraído del token JWT mediante middleware
+    const { password } = req.body;
+    
+    if (!password || password.length < 6) {
+      return res.status(400).json({ 
+        error: 'La contraseña debe tener al menos 8 caracteres' 
+      });
+    }
+
+     // Validación más completa
+    const validacionCompleta = /^(?=.*[a-z])(?=.*[A-Z])(?=.*\d)(?=.*[^\da-zA-Z]).{8,}$/;
+    if (!validacionCompleta.test(password)) {
+      return res.status(400).json({ 
+        error: 'La contraseña debe incluir mayúsculas, minúsculas, números y caracteres especiales' 
+      });
+    }
+    
+    // Hash de la nueva contraseña
+    const salt = await bcrypt.genSalt(10);
+    const hashedPassword = await bcrypt.hash(password, salt);
+    
+    // Actualizar en la base de datos
+    await User.update({
+      password: hashedPassword,
+      passwordTemporal: false // Marcar como contraseña permanente
+    }, { 
+      where: { id: userId } 
+    });
+    
+    return res.json({ 
+      message: 'Contraseña actualizada correctamente' 
+    });
+  } catch (error) {
+    console.error('Error al cambiar contraseña:', error);
+    return res.status(500).json({ 
+      error: 'Error al actualizar contraseña' 
+    });
+  }
 };

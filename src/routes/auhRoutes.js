@@ -1,6 +1,6 @@
 import express from 'express';
 import verifyTokenMiddleware from '../auth/verifyToken.js';
-import { loginAdmin, loginUsuario } from '../controllers/authController.js';
+import { loginAdmin, loginUsuario, cambiarPassword } from '../controllers/authController.js';
 import { registrarActividadUsuario } from '../auth/activityLogger.js';
 
 const router = express.Router();
@@ -11,6 +11,7 @@ router.post('/login-admin', loginAdmin);
 
 // Aplicar middleware de verificación de token para el resto
 router.use(verifyTokenMiddleware);
+router.post('/cambiar-password', cambiarPassword);
 
 // Registrar actividad solo para usuarios normales
 router.use(registrarActividadUsuario);
