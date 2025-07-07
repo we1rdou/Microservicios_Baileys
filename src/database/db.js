@@ -5,6 +5,10 @@ import { fileURLToPath } from 'url';
 
 dotenv.config();
 
+// Recrear __dirname para ES modules
+const __filename = fileURLToPath(import.meta.url);
+const __dirname = path.dirname(__filename);
+
 // En producción (Render), usar directorio con permisos
 const dbPath = process.env.NODE_ENV === 'production' 
   ? './database.sqlite'  // Directorio del proyecto en Render

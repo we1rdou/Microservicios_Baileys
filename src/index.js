@@ -54,7 +54,7 @@ const PORT = process.env.PORT || 3000;
 // Opciones de sincronización según entorno
 const syncOptions = process.env.NODE_ENV === 'production' 
   ? { force: false }  // Más seguro para producción
-  : { alter: true };  // Desarrollo
+  : { alter: false };  // Desarrollo
 
 sequelize.sync(syncOptions)
   .then(() => {
