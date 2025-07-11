@@ -9,8 +9,11 @@ const Device = sequelize.define('Device', {
     allowNull: false,
   },
   estado: {
-    type: DataTypes.ENUM('desconectado', 'conectado', 'error'),
+    type: DataTypes.STRING,
     defaultValue: 'desconectado',
+    validate: {
+      isIn: [['desconectado', 'conectado', 'error']],
+    },
   },
   token: {
     type: DataTypes.STRING,

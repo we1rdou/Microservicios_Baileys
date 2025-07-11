@@ -2,3 +2,8 @@ node_modules/
 .env
 auth_tokens.json
 auth_info_multi/
+# SQLite database files
+database.sqlite
+database.sqlite-journal
+database.sqlite-shm
+database.sqlite-wal

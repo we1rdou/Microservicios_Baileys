@@ -12,9 +12,16 @@ const User = sequelize.define('User', {
     allowNull: false,
   },
   role: {
-    type: DataTypes.ENUM('admin', 'user'),
+    type: DataTypes.STRING,
     defaultValue: 'user',
+    validate: {
+      isIn: [['admin', 'user']],
+    },
   },
+  passwordTemporal: {
+    type: DataTypes.BOOLEAN,
+    defaultValue: true,
+  }
 });
 
 export default User;

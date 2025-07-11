@@ -4,6 +4,14 @@ import User from './User.js';
 import Device from './Device.js';
 
 const ActivityLog = sequelize.define('ActivityLog', {
+  userId: {
+    type: DataTypes.INTEGER,
+    allowNull: false
+  },
+  deviceId: {
+    type: DataTypes.INTEGER,
+    allowNull: true
+  },
   accion: {
     type: DataTypes.STRING,
     allowNull: false

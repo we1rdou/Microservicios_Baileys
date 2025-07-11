@@ -55,6 +55,7 @@ export const asignarPasswordUsuario = async (req, res) => {
     const hash = await bcrypt.hash(nuevaPassword, 10);
 
     usuario.password = hash;
+    usuario.passwordTemporal = true; // Marcar como temporal
     await usuario.save();
     
     res.json({ 
@@ -70,38 +71,6 @@ export const asignarPasswordUsuario = async (req, res) => {
     });
   }
 };
-
-
-// Cambiar contraseña de un usuario
-// export const cambiarPasswordUsuario = async (req, res) => {
-//   const { id } = req.params;
-//   const { nuevaPassword } = req.body;
-
-//   try {
-//     const hash = await bcrypt.hash(nuevaPassword, 10);
-//     const usuario = await User.findByPk(id);
-    
-//     if (!usuario) {
-//       return res.status(404).json({ 
-//         success: false, 
-//         error: 'Usuario no encontrado' 
-//       });
-//     }
-
-//     usuario.password = hash;
-//     await usuario.save();
-    
-//     res.json({ 
-//       success: true, 
-//       message: 'Contraseña actualizada correctamente' 
-//     });
-//   } catch (error) {
-//     res.status(500).json({ 
-//       success: false, 
-//       error: 'Error al cambiar contraseña' 
-//     });
-//   }
-// };
 
 // Ver actividad de un usuario
 export const verActividadUsuario = async (req, res) => {

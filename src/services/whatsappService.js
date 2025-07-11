@@ -51,6 +51,16 @@ function deleteSessionState(sessionId) {
     sessionStates.delete(sessionId);
 }
 
+function cleanupSession(sessionId) {
+    const sock = getSession(sessionId);
+    if (sock?.ev) {
+        sock.ev.removeAllListeners();
+    }
+    deleteSession(sessionId);
+    deleteSessionState(sessionId);
+    deleteSessionDirectory(sessionId);
+}
+
 // 🔧 Manejador de eventos del socket
 function setupSocketEvents(sock, sessionId, saveCreds) {
     sock.ev.on('connection.update', async (update) => {
@@ -81,13 +91,13 @@ function setupSocketEvents(sock, sessionId, saveCreds) {
                 (lastDisconnect?.error?.output?.statusCode !== DisconnectReason.loggedOut);
 
             if (shouldReconnect) {
-                console.log(`[${sessionId}] 🔄 Reintentando conexión`);
-                connectToWhatsApp(sessionId); 
+                console.log(`[${sessionId}] 🔄 Reintentando conexión en 3 segundos`);
+                setTimeout(() => {
+                    connectToWhatsApp(sessionId);
+                }, 3000);
             } else {
                 console.log(`[${sessionId}] 🛑 Sesión cerrada definitivamente`);
-                deleteSession(sessionId);
-                deleteSessionState(sessionId);
-                deleteSessionDirectory(sessionId);
+                cleanupSession(sessionId);
                 updateConnectionState(sessionId, 'disconnected', '');
             }
         } 
@@ -97,7 +107,6 @@ function setupSocketEvents(sock, sessionId, saveCreds) {
             sessionState.qrCode = '';
             setSessionState(sessionId, sessionState);
 
-            // Generar/actualizar token y verificar si es primera conexión
             try {
                 const device = await Device.findOne({ where: { telefono: sessionId } });
                 const { token, reutilizado } = await generarTokenParaDispositivo(sessionId);
@@ -109,8 +118,7 @@ function setupSocketEvents(sock, sessionId, saveCreds) {
                     where: { telefono: sessionId }
                 });
                 console.log(`[${sessionId}] ✅ Dispositivo vinculado correctamente`);
-                
-                // Actualizar estado con información del token
+
                 sessionState.mostrarToken = device?.tokenVisible || false;
                 sessionState.token = sessionState.mostrarToken ? token : undefined;
                 setSessionState(sessionId, sessionState);
@@ -154,17 +162,37 @@ function setupSocketEvents(sock, sessionId, saveCreds) {
     });
 }
 
+function isCredsFileValid(sessionId) {
+  const credsPath = path.join(getSessionPath(sessionId), 'creds.json');
+  if (!fs.existsSync(credsPath)) return false;
+  try {
+    const data = JSON.parse(fs.readFileSync(credsPath, 'utf-8'));
+    return !!data && typeof data === 'object' && Object.keys(data).length > 0;
+  } catch (err) {
+    return false;
+  }
+}
+
 // 🔌 Función principal de conexión
 export async function connectToWhatsApp(sessionId) {
     try {
         console.log(`🔄 Iniciando conexión WhatsApp para: ${sessionId}`);
-        const sessionPath = ensureSessionDirectory(sessionId);
+        const sessionPath = getSessionPath(sessionId);
+
+        // 🧹 Si el archivo creds.json no es válido o está vacío, borra carpeta
+        if (!isCredsFileValid(sessionId)) {
+            console.log(`[${sessionId}] ⚠️ creds.json inválido o vacío. Eliminando carpeta y forzando nueva conexión.`);
+            deleteSessionDirectory(sessionId);
+        }
+
+        // 🧱 Asegurar que carpeta exista (se recrea si fue eliminada)
+        if (!fs.existsSync(sessionPath)) fs.mkdirSync(sessionPath, { recursive: true });
+
         const { state, saveCreds } = await useMultiFileAuthState(sessionPath);
 
-        // 1. Crear socket con configuración
         const sock = makeWASocket({
             auth: state,
-            version: [2, 3000, 1023223821], // Versión compatible
+            version: [2, 3000, 1023223821],
             browser: ['Runachay Bot', 'Chrome', '1.0.0'],
             generateMissedCallMessage: true,
             markOnlineOnConnect: false,
@@ -176,7 +204,7 @@ export async function connectToWhatsApp(sessionId) {
             shouldIgnoreJid: () => false
         });
 
-        // 2. Guardar estado en memoria
+        // Guardar en memoria
         setSession(sessionId, sock);
         setSessionState(sessionId, {
             connectionState: 'connecting',
@@ -184,10 +212,9 @@ export async function connectToWhatsApp(sessionId) {
             sessionId,
             mostrarToken: false,
             token: undefined,
-            qrCode: '' // Asegura que esté inicializado
+            qrCode: ''
         });
 
-        // 3. Configurar eventos desde función centralizada
         setupSocketEvents(sock, sessionId, saveCreds);
 
         console.log(`[${sessionId}] Socket configurado correctamente`);
@@ -200,15 +227,17 @@ export async function connectToWhatsApp(sessionId) {
     }
 }
 
-
 // 🔌 Desconexión de sesión del dispositivo
 export async function disconnectFromWhatsApp(sessionId) {
     const sock = getSession(sessionId);
     if (sock) {
-        await sock.logout();
-        deleteSession(sessionId);
-        deleteSessionState(sessionId);
-        deleteSessionDirectory(sessionId);
+        try {
+            await sock.logout();
+        } catch (e) {
+            console.warn(`[${sessionId}] ⚠️ Error durante logout: ${e.message}`);
+        }
+
+        cleanupSession(sessionId);
 
         try {
             await Device.update({
@@ -219,9 +248,9 @@ export async function disconnectFromWhatsApp(sessionId) {
                 where: { telefono: sessionId }  
             });
             console.log(`[${sessionId}] ✅ Dispositivo desvinculado correctamente`);
-            } catch (error) {
+        } catch (error) {
             console.error(`[${sessionId}] ❌ Error al desvincular dispositivo:`, error);
-            }
+        }
     }
 }
 
@@ -236,8 +265,7 @@ export async function getSessionInfo(sessionId) {
         qrCode: '',
         mostrarToken: false
     };
-    
-    // Consultar en DB si es primera conexión
+
     if (state.connectionState === 'connected') {
         const device = await Device.findOne({ where: { telefono: sessionId } });
         return {

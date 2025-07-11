@@ -5,6 +5,7 @@ import bcrypt from 'bcryptjs';
 import User from '../database/model/User.js';
 import Device from '../database/model/Device.js';
 
+// Controlador para confirmar la conexión de un dispositivo
 export const confirmarConexionDispositivo = async (req, res) => {
   try {
     const { telefono } = req.body;
@@ -53,7 +54,7 @@ export const regenerarTokenDispositivo = async (req, res) => {
   }
 };
 
-
+// Controlador para verificar el token de un dispositivo con contraseña
 export const verTokenContrasena = async (req, res) => {
   const { telefono, password } = req.body;
 

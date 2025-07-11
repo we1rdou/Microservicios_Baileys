@@ -114,5 +114,46 @@
       </div>
     </div>
   </div>
+    <!-- Modal de cambio de contraseña -->
+     <!-- Modal de cambio de contraseña -->
+<div id="passwordModal" class="fixed inset-0 bg-black bg-opacity-50 flex justify-center items-center hidden z-50">
+    <div class="bg-white dark:bg-gray-800 p-6 rounded-xl shadow-xl w-full max-w-md mx-4">
+        <h2 class="text-xl font-bold mb-4 text-gray-800 dark:text-gray-100">Cambiar contraseña</h2>
+        <p class="mb-4 text-gray-600 dark:text-gray-300">Esta es una contraseña temporal. Por favor cambia tu contraseña para continuar.</p>
+        
+        <div id="passwordError" class="bg-red-100 text-red-800 dark:bg-red-900 dark:text-red-200 p-3 rounded mb-4 hidden"></div>
+        
+        <form id="passwordForm" class="space-y-4">
+            <div>
+                <label for="newPassword" class="block mb-1 text-gray-700 dark:text-gray-300">Nueva contraseña</label>
+                <div class="relative">
+                    <input type="password" id="newPassword" class="w-full p-2 border rounded-lg dark:bg-gray-700 dark:border-gray-600 dark:text-white pr-10" required>
+                    <button type="button" id="toggleNewPassword" class="absolute inset-y-0 right-0 pr-3 flex items-center text-gray-600 dark:text-gray-400">
+                        <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z" />
+                        </svg>
+                    </button>
+                </div>
+                <p class="mt-1 text-xs text-gray-500 dark:text-gray-400">Mínimo 8 caracteres, con mayúsculas, minúsculas, números y caracteres especiales</p>
+            </div>
+            <div>
+                <label for="confirmPassword" class="block mb-1 text-gray-700 dark:text-gray-300">Confirmar contraseña</label>
+                <div class="relative">
+                    <input type="password" id="confirmPassword" class="w-full p-2 border rounded-lg dark:bg-gray-700 dark:border-gray-600 dark:text-white pr-10" required>
+                    <button type="button" id="toggleConfirmPassword" class="absolute inset-y-0 right-0 pr-3 flex items-center text-gray-600 dark:text-gray-400">
+                        <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z" />
+                        </svg>
+                    </button>
+                </div>
+            </div>
+            <div class="flex justify-end gap-3">
+                <button type="submit" id="savePasswordBtn" class="bg-blue-500 hover:bg-blue-600 text-white px-4 py-2 rounded-lg transition-colors duration-200 shadow-sm">Guardar</button>
+            </div>
+        </form>
+    </div>
+</div>
 </body>
 </html>

@@ -1,6 +1,8 @@
 import { logger } from '../utils/authUtils.js';
 import { enviarMensaje, enviarArchivo } from '../ws/messageHandler.js'; // <-- agrega enviarArchivo
 
+// Controlador para enviar mensajes y archivos
+// Este controlador maneja tanto el envío de mensajes de texto como de archivos
 export default {
   async enviarMensaje(sessionId, numero, mensaje, io) {
     logger(`[${sessionId}] Enviando mensaje a ${numero}`);
