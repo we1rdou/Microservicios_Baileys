@@ -17,6 +17,9 @@ import adminRoutes from './routes/adminRoutes.js';
 import { registrarActividadUsuario } from './auth/activityLogger.js';
 import verifyTokenMiddleware from './auth/verifyToken.js';
 import apiRouter from './routes/apiRoutes.js';
+import healthRoutes from './routes/healthRoutes.js';
+import mantenerConexionService from './services/mantenerConexionService.js';
+
 
 dotenv.config();
 
@@ -40,6 +43,7 @@ app.set('io', io);
 app.use('/api', auhRoutes); // 💡 Esto registra /api/register-number
 app.use('/admin', adminRoutes); // Rutas de administración
 app.use('/api', verifyTokenMiddleware, registrarActividadUsuario, apiRouter);
+app.use('/health', healthRoutes); // Endpoint para verificar estado del servicio
 // Archivos estáticos
 app.use(express.static(path.join(__dirname, 'public')));
 
@@ -61,6 +65,11 @@ sequelize.sync(syncOptions)
     console.log('✅ Base de datos sincronizada con SQLite');
     httpServer.listen(PORT, () => {
       console.log(`🚀 Servidor ejecutándose en http://localhost:${PORT}`);
+      const appUrl = process.env.APP_URL || `http://localhost:${PORT}`;
+      if (process.env.NODE_ENV === 'production' || process.env.KEEP_ALIVE === 'true') {
+        console.log(`🔄 Iniciando servicio para mantener conexión (${appUrl})`);
+        mantenerConexionService.start(appUrl);
+      }
     });
   })
   .catch(err => {
