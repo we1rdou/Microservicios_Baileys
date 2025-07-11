@@ -142,7 +142,6 @@ router.post('/logout/:sessionId', verifyTokenMiddleware, async (req, res) => {
 });
 
 // Desvincular dispositivo (logout + eliminar dispositivo)
-// Desvincular dispositivo (logout + desactivar dispositivo)
 router.post('/unlink-device/:sessionId', verifyTokenMiddleware, async (req, res) => {
   const { sessionId } = req.params;
 
@@ -173,7 +172,6 @@ router.post('/unlink-device/:sessionId', verifyTokenMiddleware, async (req, res)
     res.status(500).json({ error: 'Error al desvincular dispositivo' });
   }
 });
-
 
 // Detener generación de QR
 router.post('/stop-qr/:sessionId', (req, res) => {

@@ -5,7 +5,6 @@ import fs from 'fs';
 import { updateConnectionState } from '../routes/whatsappRoutes.js';
 import { generarTokenParaDispositivo } from './deviceService.js';
 import Device from '../database/model/Device.js';
-import e from 'express';
 
 // Sesiones en memoria
 const sessions = new Map();
@@ -202,7 +201,7 @@ export async function connectToWhatsApp(sessionId) {
 }
 
 
-// 🔌 Desconexión de sesión
+// 🔌 Desconexión de sesión del dispositivo
 export async function disconnectFromWhatsApp(sessionId) {
     const sock = getSession(sessionId);
     if (sock) {
@@ -214,7 +213,8 @@ export async function disconnectFromWhatsApp(sessionId) {
         try {
             await Device.update({
                 estado: 'desconectado',
-                fechaDesvinculacion: new Date()
+                fechaDesvinculacion: new Date(),
+                token: null,
             }, {
                 where: { telefono: sessionId }  
             });

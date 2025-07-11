@@ -205,7 +205,7 @@ async function cargarDispositivos() {
                                 </div>
                             ` : 'N/A'}
                         </td>
-                        <td class="${CSS.tableCell}">${device.expiraHasta ? new Date(device.expiraHuta).toLocaleString() : 'N/A'}</td>
+                        <td class="${CSS.tableCell}">${device.expiraHasta ? new Date(device.expiraHasta).toLocaleString() : 'N/A'}</td>
                         <td class="${CSS.tableCell}">${device.User?.username || 'Sin asignar'}</td>
                         <td class="${CSS.tableCell}">
                             <button onclick="regenerarToken(${device.id})" class="${CSS.buttonPrimary} text-sm">

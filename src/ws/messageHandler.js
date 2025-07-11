@@ -23,3 +23,33 @@ export async function enviarMensaje(sessionId, numero, mensaje, io) {
   }
   if (io) io.emit('mensaje', { sessionId, numero, mensaje });
 }
+
+export async function enviarArchivo(sessionId, numero, buffer, mimetype, nombre, io) {
+  try {
+    const sock = getSock(sessionId);
+
+    if (!sock) {
+      throw new Error(`No hay conexión activa con WhatsApp para la sesión: ${sessionId}`);
+    }
+
+    const numeroFormateado = numero.includes("@s.whatsapp.net")
+      ? numero
+      : `${numero}@s.whatsapp.net`;
+
+    let mensaje;
+    if (mimetype.startsWith('image/')) {
+      mensaje = { image: buffer };
+    } else {
+      mensaje = { document: buffer, mimetype, fileName: nombre };
+    }
+
+    await sock.sendMessage(numeroFormateado, mensaje);
+
+    if (io) io.emit("archivoEnviado", { sessionId, numero, nombre });
+    console.log(`[${sessionId}] Archivo enviado a ${numero}: ${nombre}`);
+
+  } catch (error) {
+    console.error(`[${sessionId}] Error al enviar el archivo a: ${numero}:`, error);
+    throw error;
+  }
+}

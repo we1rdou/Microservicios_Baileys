@@ -1,7 +1,7 @@
 // routes/apiRoutes.js
 import express from 'express';
 import whatsappRoutes from './whatsappRoutes.js';
-import messageReceiver from '../public-api/messageReceiver.js';
+import messageReceiver from '../routes/messageRoutes.js';
 import deviceRoutes from './deviceRoutes.js';
 
 const router = express.Router();

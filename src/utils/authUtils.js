@@ -1,6 +1,10 @@
 import bcrypt from 'bcryptjs';
 import User from '../database/model/User.js';
 
+export const logger = (mensaje) => {
+  console.log(`[LOG] ${new Date().toISOString()} - ${mensaje}`);
+};
+
 export const verificarCredenciales = async (username, password) => {
   const user = await User.findOne({ where: { username } });
   if (!user) return { success: false, error: 'Usuario no encontrado' };

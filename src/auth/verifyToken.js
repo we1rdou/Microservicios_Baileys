@@ -1,12 +1,12 @@
 import { verifyJWT } from '../services/tokenService.js';
+import Device from '../database/model/Device.js';
 
-export default function verifyTokenMiddleware(req, res, next) {
-  // Buscar token en cookie o en header Authorization
+export default async function verifyTokenMiddleware(req, res, next) {
   let token = req.cookies?.jwt_token;
 
   if (!token) {
     const authHeader = req.headers['authorization'];
-    if (authHeader && authHeader.startsWith('Bearer ')) {
+    if (authHeader?.startsWith('Bearer ')) {
       token = authHeader.split(' ')[1];
     }
   }
@@ -21,9 +21,27 @@ export default function verifyTokenMiddleware(req, res, next) {
       return res.status(401).json({ error: 'Token inválido o expirado' });
     }
 
-    req.user = {
-      ...payload,
-    };
+    // ⚠️ Si es dispositivo, validar token en base de datos
+    if (payload.role === 'device') {
+      if (!payload.telefono) {
+        return res.status(403).json({ error: 'Token de dispositivo sin número' });
+      }
+
+      const dispositivo = await Device.findOne({
+        where: { telefono: payload.telefono }
+      });
+
+      if (!dispositivo || dispositivo.token !== token) {
+        return res.status(403).json({ error: 'Token revocado o no autorizado' });
+      }
+
+      req.user = {
+        ...payload,
+        id: dispositivo.userId,
+      }
+    }
+
+    req.user = { ...payload };
     next();
   } catch (err) {
     console.error('Error al verificar token:', err);

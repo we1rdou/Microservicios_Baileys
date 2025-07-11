@@ -1,16 +1,16 @@
 import ActivityLog from '../database/model/ActivityLog.js';
-import Device from '../database/model/Device.js';
 
 export const registrarActividadUsuario = async (req, res, next) => {
   try {
     const user = req.user;
-    if (!user || user.role === 'admin') return next(); // solo registrar si no es admin
+    if (!user || user.role === 'admin') return next(); 
 
-    const device = await Device.findOne({ where: { userId: user.id } });
+    const userId = user.userId || user.id;
+    const deviceId = user.deviceId || null;
 
     await ActivityLog.create({
-      userId: user.id,
-      deviceId: device?.id || null,
+      userId,
+      deviceId,
       accion: `${req.method} ${req.originalUrl}`,
       descripcion: `Acceso a ${req.originalUrl}`,
       ip: req.ip,
